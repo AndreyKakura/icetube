@@ -2,6 +2,7 @@ package com.kakura.icetube.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,16 +13,30 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Video {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    private String videoFileName;
+
+    private String previewFileName;
+
+    private String videoContentType;
+
+    private String previewContentType;
+
+    private Long fileSize;
+
+    private Long videoLength;
 
     private String title;
 
     private String description;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true) //todo change to nullable = false
     private User user;
 
     private Integer likes;
@@ -31,7 +46,6 @@ public class Video {
     @ManyToMany
     private Set<Tag> tags;
 
-    private String videoUrl;
 
     @Enumerated(EnumType.STRING)
     private VideoStatus videoStatus;

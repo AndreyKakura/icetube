@@ -70,7 +70,7 @@ public class VideoService {
     }
 
     @Transactional
-    public UploadVideoResponse saveNewVideo(NewVideoDto newVideoDto) {
+    public VideoDto saveNewVideo(NewVideoDto newVideoDto) {
         Video video = videoMapper.toModel(newVideoDto);
         if (newVideoDto.getTags() != null) {
             video.setTags(convertStringsToTags(newVideoDto.getTags()));
@@ -92,20 +92,20 @@ public class VideoService {
 //            frameGrabberService.generatePreviewPictures(file); //TODO if preview from front is null then generate preview
             long length = frameGrabberService.lengthInTime(videoPath);
             video.setVideoLength(length);
-            videoRepository.save(video);
+           return videoMapper.toDto(videoRepository.save(video));
         } catch (IOException e) {
             log.error("", e);
             throw new IllegalStateException();
         }
-        return new UploadVideoResponse(savedVideo.getId(), "/api/v1/video/stream/" + savedVideo.getId());
+//        return new UploadVideoResponse(savedVideo.getId(), "http://localhost:8080/api/v1/video/stream/" + savedVideo.getId());
     }
 
     public Optional<InputStream> getPreviewInputStream(Long id) {
         return videoRepository.findById(id)
-                .flatMap(video -> {
+                .flatMap(preview -> {
                     Path previewPicturePath = Path.of(dataFolder,
-                            video.getId().toString(),
-                            removeFileExt(video.getPreviewFileName()) + video.getPreviewContentType());
+                            preview.getId().toString(),
+                            removeFileExt(preview.getPreviewFileName()) + preview.getPreviewContentType());
 
                     if (!Files.exists(previewPicturePath)) {
                         return Optional.empty();

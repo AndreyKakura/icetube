@@ -2,9 +2,12 @@ package com.kakura.icetube.mapper;
 
 import com.kakura.icetube.dto.NewVideoDto;
 import com.kakura.icetube.dto.VideoDto;
+import com.kakura.icetube.model.Tag;
 import com.kakura.icetube.model.Video;
 import com.kakura.icetube.model.VideoStatus;
 import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
 
 @Component
 public class VideoMapper {
@@ -27,8 +30,10 @@ public class VideoMapper {
                 .title(video.getTitle())
                 .description(video.getDescription())
                 .contentType(video.getVideoContentType())
-                .previewUrl("/api/v1/video/preview/" + video.getId())
-                .streamUrl("/api/v1/video/stream/" + video.getId())
+                .tags(video.getTags().stream().map(Tag::getTagText).collect(Collectors.toSet()))
+                .videoStatus(video.getVideoStatus().name())
+                .previewUrl("http://localhost:8080/api/v1/video/preview/" + video.getId())
+                .streamUrl("http://localhost:8080/api/v1/video/stream/" + video.getId())
                 .build();
     }
 

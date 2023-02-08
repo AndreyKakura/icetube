@@ -4,6 +4,7 @@ import com.kakura.icetube.dto.EditVideoDto;
 import com.kakura.icetube.dto.NewVideoDto;
 import com.kakura.icetube.dto.UploadVideoResponse;
 import com.kakura.icetube.dto.VideoDto;
+import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.service.StreamBytesInfo;
 import com.kakura.icetube.service.VideoService;
 import jakarta.validation.Valid;
@@ -13,7 +14,6 @@ import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -37,13 +37,14 @@ public class VideoController {
 
     @GetMapping("/{id}")
     public VideoDto findById(@PathVariable("id") Long id) {
-        return videoService.findById(id).orElseThrow(NotFoundException::new);
+        return videoService.findById(id)
+                .orElseThrow(() -> new NotFoundException("Cannot find video by id: " + id));
     }
 
     @GetMapping(value = "/preview/{id}", produces = MediaType.IMAGE_JPEG_VALUE)
     public ResponseEntity<StreamingResponseBody> getPreviewPicture(@PathVariable("id") Long id) {
         InputStream inputStream = videoService.getPreviewInputStream(id)
-                .orElseThrow(NotFoundException::new);
+                .orElseThrow(() -> new NotFoundException("Cannot find video by id: " + id));
         return ResponseEntity.ok(inputStream::transferTo);
     }
 
@@ -52,7 +53,7 @@ public class VideoController {
                                                              @PathVariable("id") Long id) {
         List<HttpRange> httpRangeList = HttpRange.parseRanges(httpRangeHeader);
         StreamBytesInfo streamBytesInfo = videoService.getStreamBytes(id, httpRangeList.size() > 0 ? httpRangeList.get(0) : null)
-                .orElseThrow(NotFoundException::new);
+                .orElseThrow(() -> new NotFoundException("Cannot get stream bytes"));
 
         long byteLength = streamBytesInfo.getRangeEnd() - streamBytesInfo.getRangeStart() + 1;
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(httpRangeList.size() > 0 ? HttpStatus.PARTIAL_CONTENT : HttpStatus.OK)
@@ -75,15 +76,15 @@ public class VideoController {
 
     @PostMapping(path = "/upload")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<UploadVideoResponse> uploadVideo(@ModelAttribute @Valid NewVideoDto newVideoDto) {
-        UploadVideoResponse uploadVideoResponse = null;
+    public ResponseEntity<?> uploadVideo(@ModelAttribute @Valid NewVideoDto newVideoDto) {
+        VideoDto videoDtoResponse = null;
         try {
-            uploadVideoResponse = videoService.saveNewVideo(newVideoDto);
+            videoDtoResponse = videoService.saveNewVideo(newVideoDto);
         } catch (Exception ex) {
             log.error(ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(uploadVideoResponse);
+        return ResponseEntity.status(HttpStatus.CREATED).body(videoDtoResponse);
 
     }
 
@@ -97,11 +98,6 @@ public class VideoController {
     @ResponseStatus(HttpStatus.OK)
     public EditVideoDto editVideoMetadata(@RequestBody EditVideoDto editVideoDto) {
         return videoService.editVideo(editVideoDto);
-    }
-
-    @ExceptionHandler
-    public ResponseEntity<Void> notFoundExceptionHandler(NotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
 }

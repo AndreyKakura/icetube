@@ -11,6 +11,7 @@ import com.kakura.icetube.dto.UserDto;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.model.Role;
 import com.kakura.icetube.model.User;
+import com.kakura.icetube.service.BlackListService;
 import com.kakura.icetube.service.CustomUserDetailsService;
 import com.kakura.icetube.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,10 +52,14 @@ public class UserController {
 
     private final AuthenticationManager authenticationManager;
 
+    private final BlackListService blackListService;
+
     @Value("${jwt_secret}")
     private String SECRET_KEY;
-    private static final int ACCESS_TOKEN_EXPIRATION_TIME = 10 * 60 * 60;
-    private static final int REFRESH_TOKEN_EXPIRATION_TIME = 30 * 60 * 60;
+    @Value("${access_token_expiration_millis}")
+    private int ACCESS_TOKEN_EXPIRATION_TIME;
+    @Value("${refresh_token_expiration_millis}")
+    private int REFRESH_TOKEN_EXPIRATION_TIME;
 
     @PostMapping("/register")
     public ResponseEntity<UserDto> register(@ModelAttribute RegistrationDto registrationDto) {
@@ -101,6 +106,8 @@ public class UserController {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             try {
                 String oldRefreshToken = authorizationHeader.substring("Bearer ".length());
+                blackListService.blackListJwt(oldRefreshToken);
+                System.out.println(blackListService.blackListJwt(oldRefreshToken));
                 Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
                 JWTVerifier verifier = JWT.require(algorithm).build();
                 DecodedJWT decodedJWT = verifier.verify(oldRefreshToken);
@@ -110,7 +117,7 @@ public class UserController {
 
                 String accessToken = JWT.create()
                         .withSubject(user.getUsername())
-                        .withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
+                        .withExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
                         .withIssuer(request.getRequestURL().toString())
                         .withClaim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
                         .sign(algorithm);

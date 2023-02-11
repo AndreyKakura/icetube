@@ -5,6 +5,7 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kakura.icetube.service.BlackListService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,15 +35,33 @@ import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON_VALUE;
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
+    private final BlackListService blackListService;
+
     @Value("${jwt_secret}")
     private String SECRET_KEY;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (request.getServletPath().equals("/api/v1/auth/register")
+        if (/*request.getServletPath().equals("/api/v1/auth/register")
                 || request.getServletPath().equals("/api/v1/auth/token")
-                || request.getServletPath().equals("/api/v1/auth/refresh")) {
-            filterChain.doFilter(request, response);
+                ||*/ request.getServletPath().equals("/api/v1/auth/refresh")) {
+            String authorizationHeader = request.getHeader(AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.substring("Bearer ".length());
+                String blackListedToken = blackListService.getJwtBlackList(token);
+                if (blackListedToken != null) {
+                    log.error("JwtInterceptor: Token is blacklisted");
+                    response.setStatus(401);
+                    Map error = Map.of("error_message", "Refresh token is blacklisted");
+                    error.put("error_message", error);
+                    response.setContentType(APPLICATION_JSON_VALUE);
+                    new ObjectMapper().writeValue(response.getOutputStream(), error);
+                } else {
+                    filterChain.doFilter(request, response);
+                }
+            } else {
+                throw new RuntimeException("Refresh token is missing");
+            }
         } else {
             String authorizationHeader = request.getHeader(AUTHORIZATION);
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {

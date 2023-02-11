@@ -23,7 +23,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/video")
+@RequestMapping("/api/video")
 @Log4j2
 @AllArgsConstructor
 public class VideoController {

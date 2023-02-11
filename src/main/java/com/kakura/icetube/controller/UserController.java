@@ -41,7 +41,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Log4j2
 public class UserController {
@@ -65,7 +65,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<UserDto> register(@ModelAttribute RegistrationDto registrationDto) {
-        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/v1/auth/register").toUriString());
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/auth/register").toUriString());
         return ResponseEntity.created(uri).body(userService.saveUser(registrationDto));
     }
 

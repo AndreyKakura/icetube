@@ -32,8 +32,8 @@ public class VideoMapper {
                 .contentType(video.getVideoContentType())
                 .tags(video.getTags().stream().map(Tag::getTagText).collect(Collectors.toSet()))
                 .videoStatus(video.getVideoStatus().name())
-                .previewUrl("http://localhost:8080/api/v1/video/preview/" + video.getId())
-                .streamUrl("http://localhost:8080/api/v1/video/stream/" + video.getId())
+                .previewUrl("/api/video/preview/" + video.getId())
+                .streamUrl("/api/video/stream/" + video.getId())
                 .build();
     }
 

@@ -106,8 +106,8 @@ public class UserController {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             try {
                 String oldRefreshToken = authorizationHeader.substring("Bearer ".length());
-                blackListService.blackListJwt(oldRefreshToken);
-                System.out.println(blackListService.blackListJwt(oldRefreshToken));
+                blackListService.addJwtToBlackList(oldRefreshToken);
+                System.out.println(blackListService.addJwtToBlackList(oldRefreshToken));
                 Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
                 JWTVerifier verifier = JWT.require(algorithm).build();
                 DecodedJWT decodedJWT = verifier.verify(oldRefreshToken);

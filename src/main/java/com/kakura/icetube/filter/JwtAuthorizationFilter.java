@@ -48,12 +48,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             String authorizationHeader = request.getHeader(AUTHORIZATION);
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 String token = authorizationHeader.substring("Bearer ".length());
-                String blackListedToken = blackListService.getJwtBlackList(token);
+
+                Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
+                JWTVerifier verifier = JWT.require(algorithm).build();
+                DecodedJWT decodedJWT = verifier.verify(token);
+
+                String blackListedToken = blackListService.getJwtFromBlackList(token);
                 if (blackListedToken != null) {
                     log.error("JwtInterceptor: Token is blacklisted");
                     response.setStatus(401);
                     Map error = Map.of("error_message", "Refresh token is blacklisted");
-                    error.put("error_message", error);
                     response.setContentType(APPLICATION_JSON_VALUE);
                     new ObjectMapper().writeValue(response.getOutputStream(), error);
                 } else {

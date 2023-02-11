@@ -9,14 +9,12 @@ import org.springframework.stereotype.Service;
 public class BlackListService {
 
     @CachePut(CacheConfig.BLACKLIST_CACHE_NAME)
-    public String blackListJwt(String jwt) {
-        System.out.println(11);
+    public String addJwtToBlackList(String jwt) {
         return jwt;
     }
 
     @Cacheable(value = CacheConfig.BLACKLIST_CACHE_NAME, unless = "#result == null")
-    public String getJwtBlackList(String jwt) {
-        System.out.println(22);
+    public String getJwtFromBlackList(String jwt) {
         return null;
     }
 

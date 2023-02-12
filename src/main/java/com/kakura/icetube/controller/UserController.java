@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kakura.icetube.dto.LoginDto;
 import com.kakura.icetube.dto.RegistrationDto;
 import com.kakura.icetube.dto.UserDto;
+import com.kakura.icetube.exception.BadRequestException;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.exception.UnauthorizedException;
 import com.kakura.icetube.model.Role;
@@ -18,15 +19,18 @@ import com.kakura.icetube.service.CustomUserDetailsService;
 import com.kakura.icetube.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -64,13 +68,22 @@ public class UserController {
     private int REFRESH_TOKEN_EXPIRATION_TIME;
 
     @PostMapping("/register")
-    public ResponseEntity<UserDto> register(@ModelAttribute RegistrationDto registrationDto) {
+    public ResponseEntity<UserDto> register(@RequestBody @Valid RegistrationDto registrationDto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(bindingResult.getFieldErrors().stream()
+                    .map(DefaultMessageSourceResolvable::getDefaultMessage).collect(Collectors.joining("; ")));
+        }
         URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/auth/register").toUriString());
         return ResponseEntity.created(uri).body(userService.saveUser(registrationDto));
     }
 
     @PostMapping("/token")
-    public ResponseEntity<?> getToken(@ModelAttribute LoginDto loginDto, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<?> getToken(@RequestBody @Valid LoginDto loginDto, BindingResult bindingResult, HttpServletRequest request, HttpServletResponse response) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(bindingResult.getFieldErrors().stream()
+                    .map(DefaultMessageSourceResolvable::getDefaultMessage).collect(Collectors.joining("; ")));
+        }
+        System.out.println(bindingResult.getAllErrors());
         String username = loginDto.getUsername();
         String password = loginDto.getPassword();
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);

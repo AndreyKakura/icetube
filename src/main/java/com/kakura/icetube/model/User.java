@@ -31,13 +31,16 @@ public class User {
     )
     private Collection<Role> roles = new ArrayList<>();
 
-    @Column(unique = true)
+    @Column(unique = true, length = 30, nullable = false)
     private String username;
 
+    @Column(length = 30, nullable = false)
     private String name;
 
+    @Column(length = 30, nullable = false)
     private String surname;
 
+    @Column(nullable = false)
     private String password;
 
     @ManyToMany

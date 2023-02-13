@@ -6,6 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kakura.icetube.dto.AuthResponseDto;
 import com.kakura.icetube.dto.LoginDto;
 import com.kakura.icetube.dto.RegistrationDto;
 import com.kakura.icetube.dto.UserDto;
@@ -79,25 +80,26 @@ public class UserController {
 
     @PostMapping("/token")
     public ResponseEntity<?> getToken(@RequestBody @Valid LoginDto loginDto, BindingResult bindingResult, HttpServletRequest request, HttpServletResponse response) {
+        log.info("/token");
         if (bindingResult.hasErrors()) {
             throw new BadRequestException(bindingResult.getFieldErrors().stream()
                     .map(DefaultMessageSourceResolvable::getDefaultMessage).collect(Collectors.joining("; ")));
         }
-        System.out.println(bindingResult.getAllErrors());
         String username = loginDto.getUsername();
         String password = loginDto.getPassword();
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
 
         authenticationManager.authenticate(authenticationToken);
 
-        org.springframework.security.core.userdetails.User user =
-                (org.springframework.security.core.userdetails.User) customUserDetailsService.loadUserByUsername(username);
+        User user = userService.getUserByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Cannot find user by username: " + username));
+
         Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
         String accessToken = JWT.create()
                 .withSubject(user.getUsername())
                 .withExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
                 .withIssuer(request.getRequestURL().toString())
-                .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+                .withClaim("roles", user.getRoles().stream().map(Role::getName).toList())
                 .withClaim("type", "accessToken")
                 .sign(algorithm);
 
@@ -108,62 +110,63 @@ public class UserController {
                 .withClaim("type", "refreshToken")
                 .sign(algorithm);
 
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put("access_token", accessToken);
-        tokens.put("refresh_token", refreshToken);
-        return ResponseEntity.ok().body(tokens);
+        AuthResponseDto authResponseDto = new AuthResponseDto(accessToken, refreshToken, user.getId(),
+                user.getUsername(), user.getName(), user.getSurname(),
+                user.getRoles().stream().map(Role::getName).toList());
+
+        return ResponseEntity.ok().body(authResponseDto);
     }
 
     @GetMapping("/refresh")
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        log.info("/refresh");
         String authorizationHeader = request.getHeader(AUTHORIZATION);
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                String oldRefreshToken = authorizationHeader.substring("Bearer ".length());
-                Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
-                JWTVerifier verifier = JWT.require(algorithm).build();
-                DecodedJWT decodedJWT;
+            String oldRefreshToken = authorizationHeader.substring("Bearer ".length());
+            Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
+            JWTVerifier verifier = JWT.require(algorithm).build();
+            DecodedJWT decodedJWT;
 
-                try {
-                    decodedJWT = verifier.verify(oldRefreshToken);
-                } catch (JWTVerificationException e) {
-                    throw new UnauthorizedException(e.getMessage());
-                }
+            try {
+                decodedJWT = verifier.verify(oldRefreshToken);
+            } catch (JWTVerificationException e) {
+                throw new UnauthorizedException(e.getMessage());
+            }
 
-                if (!decodedJWT.getClaim("type").asString().equals("refreshToken")) {
-                    throw new UnauthorizedException("Trying to use access token as refresh token");
-                }
+            if (!decodedJWT.getClaim("type").asString().equals("refreshToken")) {
+                throw new UnauthorizedException("Trying to use access token as refresh token");
+            }
 
-                if (blackListService.getJwtFromBlackList(oldRefreshToken) != null) {
-                    throw new UnauthorizedException("Refresh token is blacklisted");
-                }
+            if (blackListService.getJwtFromBlackList(oldRefreshToken) != null) {
+                throw new UnauthorizedException("Refresh token is blacklisted");
+            }
 
-                String username = decodedJWT.getSubject();
-                User user = userService.getUserByUsername(username)
-                        .orElseThrow(() -> new NotFoundException("Cannot find user by username: " + username));
+            String username = decodedJWT.getSubject();
+            User user = userService.getUserByUsername(username)
+                    .orElseThrow(() -> new NotFoundException("Cannot find user by username: " + username));
 
-                blackListService.addJwtToBlackList(oldRefreshToken);
+            blackListService.addJwtToBlackList(oldRefreshToken);
 
-                String accessToken = JWT.create()
-                        .withSubject(user.getUsername())
-                        .withExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
-                        .withIssuer(request.getRequestURL().toString())
-                        .withClaim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
-                        .withClaim("type", "accessToken")
-                        .sign(algorithm);
+            String accessToken = JWT.create()
+                    .withSubject(user.getUsername())
+                    .withExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
+                    .withIssuer(request.getRequestURL().toString())
+                    .withClaim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
+                    .withClaim("type", "accessToken")
+                    .sign(algorithm);
 
-                String refreshToken = JWT.create()
-                        .withSubject(user.getUsername())
-                        .withExpiresAt(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
-                        .withIssuer(request.getRequestURL().toString())
-                        .withClaim("type", "refreshToken")
-                        .sign(algorithm);
+            String refreshToken = JWT.create()
+                    .withSubject(user.getUsername())
+                    .withExpiresAt(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
+                    .withIssuer(request.getRequestURL().toString())
+                    .withClaim("type", "refreshToken")
+                    .sign(algorithm);
 
-                Map<String, String> tokens = new HashMap<>();
-                tokens.put("access_token", accessToken);
-                tokens.put("refresh_token", refreshToken);
-                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                new ObjectMapper().writeValue(response.getOutputStream(), tokens);
+            AuthResponseDto authResponseDto = new AuthResponseDto(accessToken, refreshToken, user.getId(),
+                    user.getUsername(), user.getName(), user.getSurname(),
+                    user.getRoles().stream().map(Role::getName).toList());
 
+            return ResponseEntity.ok().body(authResponseDto);
         } else {
             throw new UnauthorizedException("Refresh token is missing");
         }
@@ -172,6 +175,7 @@ public class UserController {
     @GetMapping("/testuser")
     @PreAuthorize("hasRole('ROLE_USER')")
     public Map<String, String> testUser() {
+        log.info("/testuser");
         return Map.of("this", "is for USER");
     }
 

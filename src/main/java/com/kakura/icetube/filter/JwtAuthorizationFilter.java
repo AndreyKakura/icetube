@@ -42,13 +42,14 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (request.getServletPath().equals("/api/auth/refresh")) {
-            String authorizationHeader = request.getHeader(AUTHORIZATION);
-            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                filterChain.doFilter(request, response);
-            } else {
-                throw new UnauthorizedException("Refresh token is missing");
-            }
+        if (request.getServletPath().equals("/api/auth/token") || request.getServletPath().equals("/api/auth/refresh")) {
+            filterChain.doFilter(request, response);
+//            String authorizationHeader = request.getHeader(AUTHORIZATION);
+//            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+//                filterChain.doFilter(request, response);
+//            } else {
+//                throw new UnauthorizedException("Refresh token is missing");
+//            }
         } else {
             String authorizationHeader = request.getHeader(AUTHORIZATION);
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
@@ -75,7 +76,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                     new ObjectMapper().writeValue(response.getOutputStream(), errorMap);
                 }
             } else {
-                filterChain.doFilter(request, response);
+                log.error("Authorization header invalid or does no exist");
+                response.setStatus(UNAUTHORIZED.value());
+//                filterChain.doFilter(request, response);//todo
             }
         }
     }

@@ -18,6 +18,7 @@ import com.kakura.icetube.model.User;
 import com.kakura.icetube.service.BlackListService;
 import com.kakura.icetube.service.CustomUserDetailsService;
 import com.kakura.icetube.service.UserService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -25,7 +26,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,6 +37,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -67,6 +71,9 @@ public class UserController {
 
     @Value("${refresh_token_expiration_millis}")
     private int REFRESH_TOKEN_EXPIRATION_TIME;
+
+    @Value("${jwtRefreshCookieName}")
+    private String REFRESH_COOKIE_NAME;
 
     @PostMapping("/register")
     public ResponseEntity<UserDto> register(@RequestBody @Valid RegistrationDto registrationDto, BindingResult bindingResult) {
@@ -110,66 +117,81 @@ public class UserController {
                 .withClaim("type", "refreshToken")
                 .sign(algorithm);
 
-        AuthResponseDto authResponseDto = new AuthResponseDto(accessToken, refreshToken, user.getId(),
+        ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
+                .path("/api/auth/refresh").maxAge(REFRESH_TOKEN_EXPIRATION_TIME / 1000)
+                .httpOnly(true).build();
+
+        AuthResponseDto authResponseDto = new AuthResponseDto(accessToken, user.getId(),
                 user.getUsername(), user.getName(), user.getSurname(),
                 user.getRoles().stream().map(Role::getName).toList());
 
-        return ResponseEntity.ok().body(authResponseDto);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(authResponseDto);
     }
 
     @GetMapping("/refresh")
     public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         log.info("/refresh");
-        String authorizationHeader = request.getHeader(AUTHORIZATION);
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String oldRefreshToken = authorizationHeader.substring("Bearer ".length());
-            Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
-            JWTVerifier verifier = JWT.require(algorithm).build();
-            DecodedJWT decodedJWT;
+//        String authorizationHeader = request.getHeader(AUTHORIZATION);
+//        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+//            String oldRefreshToken = authorizationHeader.substring("Bearer ".length());
+        Cookie oldRefreshCookie = WebUtils.getCookie(request, REFRESH_COOKIE_NAME);
+
+        Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
+        JWTVerifier verifier = JWT.require(algorithm).build();
+        DecodedJWT decodedJWT;
+
+        if (oldRefreshCookie != null) {
+            String oldRefreshToken = oldRefreshCookie.getValue();
 
             try {
                 decodedJWT = verifier.verify(oldRefreshToken);
+                if (!decodedJWT.getClaim("type").asString().equals("refreshToken")) {
+                    throw new UnauthorizedException("Trying to use access token as refresh token");
+                }
+
+                if (blackListService.getJwtFromBlackList(oldRefreshToken) != null) {
+                    throw new UnauthorizedException("Refresh token is blacklisted");
+                }
+                String username = decodedJWT.getSubject();
+                User user = userService.getUserByUsername(username)
+                        .orElseThrow(() -> new NotFoundException("Cannot find user by username: " + username));
+
+                blackListService.addJwtToBlackList(oldRefreshToken);
+
+                String accessToken = JWT.create()
+                        .withSubject(user.getUsername())
+                        .withExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
+                        .withIssuer(request.getRequestURL().toString())
+                        .withClaim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
+                        .withClaim("type", "accessToken")
+                        .sign(algorithm);
+
+                String refreshToken = JWT.create()
+                        .withSubject(user.getUsername())
+                        .withExpiresAt(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
+                        .withIssuer(request.getRequestURL().toString())
+                        .withClaim("type", "refreshToken")
+                        .sign(algorithm);
+                ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
+                        .path("/api/auth/refresh").maxAge(REFRESH_TOKEN_EXPIRATION_TIME / 1000)
+                        .httpOnly(true).build();
+
+                AuthResponseDto authResponseDto = new AuthResponseDto(accessToken, user.getId(),
+                        user.getUsername(), user.getName(), user.getSurname(),
+                        user.getRoles().stream().map(Role::getName).toList());
+
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                        .body(authResponseDto);
             } catch (JWTVerificationException e) {
                 throw new UnauthorizedException(e.getMessage());
             }
-
-            if (!decodedJWT.getClaim("type").asString().equals("refreshToken")) {
-                throw new UnauthorizedException("Trying to use access token as refresh token");
-            }
-
-            if (blackListService.getJwtFromBlackList(oldRefreshToken) != null) {
-                throw new UnauthorizedException("Refresh token is blacklisted");
-            }
-
-            String username = decodedJWT.getSubject();
-            User user = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new NotFoundException("Cannot find user by username: " + username));
-
-            blackListService.addJwtToBlackList(oldRefreshToken);
-
-            String accessToken = JWT.create()
-                    .withSubject(user.getUsername())
-                    .withExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
-                    .withIssuer(request.getRequestURL().toString())
-                    .withClaim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
-                    .withClaim("type", "accessToken")
-                    .sign(algorithm);
-
-            String refreshToken = JWT.create()
-                    .withSubject(user.getUsername())
-                    .withExpiresAt(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
-                    .withIssuer(request.getRequestURL().toString())
-                    .withClaim("type", "refreshToken")
-                    .sign(algorithm);
-
-            AuthResponseDto authResponseDto = new AuthResponseDto(accessToken, refreshToken, user.getId(),
-                    user.getUsername(), user.getName(), user.getSurname(),
-                    user.getRoles().stream().map(Role::getName).toList());
-
-            return ResponseEntity.ok().body(authResponseDto);
         } else {
-            throw new UnauthorizedException("Refresh token is missing");
+            throw new UnauthorizedException("Refresh  cookie token is missing");
         }
+
     }
 
     @GetMapping("/testuser")

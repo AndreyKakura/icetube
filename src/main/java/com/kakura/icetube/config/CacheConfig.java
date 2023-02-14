@@ -19,6 +19,9 @@ import java.util.Map;
 public class CacheConfig {
 
     public final static String BLACKLIST_CACHE_NAME = "jwt-black-list";
+
+    public final static String REFRESH_CACHE_NAME = "jwt-refresh-list";
+
     @Value("${refresh_token_expiration_millis}")
     private int refreshTokenDuration;
 
@@ -37,8 +40,10 @@ public class CacheConfig {
     RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         return (builder) -> {
             Map<String, RedisCacheConfiguration> configurationMap = new HashMap<>();
-            configurationMap.put(BLACKLIST_CACHE_NAME, RedisCacheConfiguration.defaultCacheConfig().entryTtl(
-                    Duration.ofMillis(refreshTokenDuration)));
+            configurationMap.put(BLACKLIST_CACHE_NAME, RedisCacheConfiguration.defaultCacheConfig()
+                    .entryTtl(Duration.ofMillis(refreshTokenDuration)));
+            configurationMap.put(REFRESH_CACHE_NAME, RedisCacheConfiguration.defaultCacheConfig()
+                    .entryTtl(Duration.ofMillis(refreshTokenDuration)));
             builder.withInitialCacheConfigurations(configurationMap);
         };
     }

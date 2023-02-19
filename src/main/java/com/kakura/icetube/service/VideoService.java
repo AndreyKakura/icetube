@@ -1,6 +1,7 @@
 package com.kakura.icetube.service;
 
 import com.kakura.icetube.dto.UploadVideoResponse;
+import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.VideoMapper;
 import com.kakura.icetube.repository.TagRepository;
 import com.kakura.icetube.repository.VideoRepository;
@@ -22,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -86,13 +88,13 @@ public class VideoService {
             }
 
             Path previewPath = Path.of(directory.toString(), newVideoDto.getPreviewFile().getOriginalFilename());
-                try (OutputStream out = Files.newOutputStream(previewPath, CREATE, WRITE)) {
-                    newVideoDto.getPreviewFile().getInputStream().transferTo(out);
+            try (OutputStream out = Files.newOutputStream(previewPath, CREATE, WRITE)) {
+                newVideoDto.getPreviewFile().getInputStream().transferTo(out);
             }
 //            frameGrabberService.generatePreviewPictures(file); //TODO if preview from front is null then generate preview
             long length = frameGrabberService.lengthInTime(videoPath);
             video.setVideoLength(length);
-           return videoMapper.toDto(videoRepository.save(video));
+            return videoMapper.toDto(videoRepository.save(video));
         } catch (IOException e) {
             log.error("", e);
             throw new IllegalStateException();
@@ -100,23 +102,17 @@ public class VideoService {
 //        return new UploadVideoResponse(savedVideo.getId(), "http://localhost:8080/api/v1/video/stream/" + savedVideo.getId());
     }
 
-    public Optional<InputStream> getPreviewInputStream(Long id) {
-        return videoRepository.findById(id)
-                .flatMap(preview -> {
-                    Path previewPicturePath = Path.of(dataFolder,
-                            preview.getId().toString(),
-                            removeFileExt(preview.getPreviewFileName()) + preview.getPreviewContentType());
-
-                    if (!Files.exists(previewPicturePath)) {
-                        return Optional.empty();
-                    }
-                    try {
-                        return Optional.of(Files.newInputStream(previewPicturePath));
-                    } catch (IOException e) {
-                        log.error("", e);
-                        return Optional.empty();
-                    }
-                });
+    public byte[] getPreviewBytes(Long id) {
+        Video videoFromDb = videoRepository.findById(id).orElseThrow(() -> new NotFoundException("Cannot find preview by id" + id));
+        byte[] imageBytes = new byte[0];
+        try {
+            imageBytes = Files.readAllBytes(Paths.get(dataFolder, videoFromDb.getId().toString(),
+                    removeFileExt(videoFromDb.getPreviewFileName()) + videoFromDb.getPreviewContentType()));
+        } catch (IOException e) {
+            log.error(e);
+            throw new NotFoundException("Cannot get preview by id " + id);
+        }
+        return imageBytes;
     }
 
     public Optional<StreamBytesInfo> getStreamBytes(Long id, HttpRange range) {

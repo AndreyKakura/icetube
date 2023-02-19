@@ -10,14 +10,14 @@ import com.kakura.icetube.service.VideoService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.HttpRange;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -42,10 +42,10 @@ public class VideoController {
     }
 
     @GetMapping(value = "/preview/{id}", produces = MediaType.IMAGE_JPEG_VALUE)
-    public ResponseEntity<StreamingResponseBody> getPreviewPicture(@PathVariable("id") Long id) {
-        InputStream inputStream = videoService.getPreviewInputStream(id)
-                .orElseThrow(() -> new NotFoundException("Cannot find video by id: " + id));
-        return ResponseEntity.ok(inputStream::transferTo);
+    public ResponseEntity<ByteArrayResource> getPreviewPicture(@PathVariable("id") Long id) {
+        byte[] imageBytes = videoService.getPreviewBytes(id);
+        ByteArrayResource resource = new ByteArrayResource(imageBytes);
+        return ResponseEntity.ok().contentLength(imageBytes.length).body(resource);
     }
 
     @GetMapping("/stream/{id}")

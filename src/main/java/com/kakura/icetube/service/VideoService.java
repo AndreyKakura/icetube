@@ -1,6 +1,5 @@
 package com.kakura.icetube.service;
 
-import com.kakura.icetube.dto.UploadVideoResponse;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.VideoMapper;
 import com.kakura.icetube.repository.TagRepository;
@@ -53,18 +52,20 @@ public class VideoService {
 
     private final VideoMapper videoMapper;
 
+    private final UserService userService;
+
     @Autowired
-    public VideoService(VideoRepository videoRepository, TagRepository tagRepository, FrameGrabberService frameGrabberService, VideoMapper videoMapper) {
+    public VideoService(VideoRepository videoRepository, TagRepository tagRepository, FrameGrabberService frameGrabberService, VideoMapper videoMapper, UserService userService) {
         this.videoRepository = videoRepository;
         this.tagRepository = tagRepository;
         this.frameGrabberService = frameGrabberService;
         this.videoMapper = videoMapper;
+        this.userService = userService;
     }
 
 
     public List<VideoDto> findAll() {
-        return videoRepository.findAll()
-                .stream().map(videoMapper::toDto).collect(Collectors.toList());
+        return videoRepository.findAll().stream().map(videoMapper::toDto).collect(Collectors.toList());
     }
 
     public Optional<VideoDto> findById(Long id) {
@@ -106,8 +107,7 @@ public class VideoService {
         Video videoFromDb = videoRepository.findById(id).orElseThrow(() -> new NotFoundException("Cannot find preview by id" + id));
         byte[] imageBytes = new byte[0];
         try {
-            imageBytes = Files.readAllBytes(Paths.get(dataFolder, videoFromDb.getId().toString(),
-                    removeFileExt(videoFromDb.getPreviewFileName()) + videoFromDb.getPreviewContentType()));
+            imageBytes = Files.readAllBytes(Paths.get(dataFolder, videoFromDb.getId().toString(), removeFileExt(videoFromDb.getPreviewFileName()) + videoFromDb.getPreviewContentType()));
         } catch (IOException e) {
             log.error(e);
             throw new NotFoundException("Cannot get preview by id " + id);
@@ -129,9 +129,7 @@ public class VideoService {
             long fileSize = Files.size(filePath);
             long chunkSize = fileSize / 100;
             if (range == null) {
-                return Optional.of(new StreamBytesInfo(
-                        out -> Files.newInputStream(filePath).transferTo(out),
-                        fileSize, 0, fileSize, byId.get().getVideoContentType()));
+                return Optional.of(new StreamBytesInfo(out -> Files.newInputStream(filePath).transferTo(out), fileSize, 0, fileSize, byId.get().getVideoContentType()));
             }
 
             long rangeStart = range.getRangeStart(0);
@@ -140,15 +138,13 @@ public class VideoService {
                 rangeEnd = fileSize - 1;
             }
             long finalRangeEnd = rangeEnd;
-            return Optional.of(new StreamBytesInfo(
-                    out -> {
-                        try (InputStream inputStream = Files.newInputStream(filePath)) {
-                            inputStream.skip(rangeStart);
-                            byte[] bytes = inputStream.readNBytes((int) ((finalRangeEnd - rangeStart) + 1));
-                            out.write(bytes);
-                        }
-                    },
-                    fileSize, rangeStart, rangeEnd, byId.get().getVideoContentType()));
+            return Optional.of(new StreamBytesInfo(out -> {
+                try (InputStream inputStream = Files.newInputStream(filePath)) {
+                    inputStream.skip(rangeStart);
+                    byte[] bytes = inputStream.readNBytes((int) ((finalRangeEnd - rangeStart) + 1));
+                    out.write(bytes);
+                }
+            }, fileSize, rangeStart, rangeEnd, byId.get().getVideoContentType()));
         } catch (IOException ex) {
             log.error("", ex);
             return Optional.empty();
@@ -157,8 +153,7 @@ public class VideoService {
 
 
     public EditVideoDto editVideo(EditVideoDto editVideoDto) {
-        Video videoFromDb = videoRepository.findById(editVideoDto.getId())
-                .orElseThrow(() -> new IllegalStateException("Cannot find video by id - " + editVideoDto.getId()));
+        Video videoFromDb = videoRepository.findById(editVideoDto.getId()).orElseThrow(() -> new NotFoundException("Cannot find video by id - " + editVideoDto.getId()));
 
         videoFromDb.setTitle(editVideoDto.getTitle());
         videoFromDb.setDescription(editVideoDto.getDescription());
@@ -188,8 +183,7 @@ public class VideoService {
     }
 
     public void uploadPreview(MultipartFile file, Long videoId) {
-        Video videoFromDb = videoRepository.findById(videoId)
-                .orElseThrow(() -> new IllegalStateException("Cannot find video by id - " + videoId));
+        Video videoFromDb = videoRepository.findById(videoId).orElseThrow(() -> new NotFoundException("Cannot find video by id - " + videoId));
 
         Path directory = Path.of(dataFolder, videoId.toString());
         try {
@@ -202,4 +196,51 @@ public class VideoService {
             throw new IllegalStateException();
         }
     }
+
+    public VideoDto likeVideo(Long id) {
+        Video videoFromDb = videoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Cannot find video by id - " + id));
+
+        if (userService.ifLikedVideo(id)) {
+            videoFromDb.decrementLikes();
+            userService.removeFromLikedVideos(videoFromDb);
+        } else if (userService.ifDislikedVideo(id)) {
+            videoFromDb.decrementDislikes();
+            userService.removeFromDislikedVideos(videoFromDb);
+            videoFromDb.incrementLikes();
+            userService.addToLikedVideos(videoFromDb);
+        } else {
+            videoFromDb.incrementLikes();
+            userService.addToLikedVideos(videoFromDb);
+        }
+
+        videoRepository.save(videoFromDb);
+
+        return videoMapper.toDto(videoFromDb);
+
+    }
+
+    public VideoDto dislikeVideo(Long id) {
+        Video videoFromDb = videoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Cannot find video by id - " + id));
+
+        if (userService.ifDislikedVideo(id)) {
+            videoFromDb.decrementDislikes();
+            userService.removeFromDislikedVideos(videoFromDb);
+        } else if (userService.ifLikedVideo(id)) {
+            videoFromDb.decrementLikes();
+            userService.removeFromLikedVideos(videoFromDb);
+            videoFromDb.incrementDislikes();
+            userService.addToDisLikedVideos(videoFromDb);
+        } else {
+            videoFromDb.incrementDislikes();
+            userService.addToDisLikedVideos(videoFromDb);
+        }
+
+        videoRepository.save(videoFromDb);
+
+        return videoMapper.toDto(videoFromDb);
+
+    }
+
 }

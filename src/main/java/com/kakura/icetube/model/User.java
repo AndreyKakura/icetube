@@ -6,10 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "users")
@@ -50,9 +47,24 @@ public class User {
     private Set<User> subscribers;
 
     @ManyToMany
-    private List<Video> likedVideos;
+    private Set<Video> likedVideos = new LinkedHashSet<>();
 
     @ManyToMany
-    private List<Video> dislikedVideos;
+    private Set<Video> dislikedVideos = new LinkedHashSet<>();
 
+    public void addToLikedVideos(Video video) {
+        likedVideos.add(video);
+    }
+
+    public void removeFromLikedVideos(Video video) {
+        likedVideos.remove(video);
+    }
+
+    public void removeFromDislikedVideos(Video video) {
+        dislikedVideos.remove(video);
+    }
+
+    public void addToDislikedVideos(Video video) {
+        dislikedVideos.add(video);
+    }
 }

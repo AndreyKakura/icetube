@@ -21,12 +21,12 @@ public class RegistrationDto {
     private String username;
 
     @NotEmpty(message = "Name should not be empty")
-    @Length(min = 4, max = 30, message = "Length: 4-30")
+    @Length(min = 2, max = 30, message = "Length: 2-30")
     @Pattern(regexp = "[A-Za-zА-Яа-я]+", message = "Only latin and cyrillic letters")
     private String name;
 
     @NotEmpty(message = "Surname should not be empty")
-    @Length(min = 4, max = 30, message = "Length: 4-30")
+    @Length(min = 2, max = 30, message = "Length: 2-30")
     @Pattern(regexp = "[A-Za-zА-Яа-я]+", message = "Only latin and cyrillic letters")
     private String surname;
 

@@ -25,6 +25,10 @@ public class VideoDto {
 
     private String videoStatus;
 
+    private Integer likes;
+
+    private Integer dislikes;
+
     private String previewUrl;
 
     private String streamUrl;

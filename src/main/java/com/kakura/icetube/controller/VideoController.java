@@ -100,4 +100,14 @@ public class VideoController {
         return videoService.editVideo(editVideoDto);
     }
 
+    @PostMapping("/{id}/like")
+    public VideoDto likeVideo(@PathVariable("id") Long id) {
+        return videoService.likeVideo(id);
+    }
+
+    @PostMapping("/{id}/dislike")
+    public VideoDto dislikeVideo(@PathVariable("id") Long id) {
+        return videoService.dislikeVideo(id);
+    }
+
 }

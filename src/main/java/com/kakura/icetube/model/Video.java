@@ -1,5 +1,6 @@
 package com.kakura.icetube.model;
 
+import com.kakura.icetube.model.converter.AtomicIntegerConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Entity
 @Data
@@ -39,9 +41,11 @@ public class Video {
     @JoinColumn(name = "user_id", nullable = true) //todo change to nullable = false
     private User user;
 
-    private Integer likes;
+    @Convert(converter = AtomicIntegerConverter.class)
+    private AtomicInteger likes = new AtomicInteger(0);
 
-    private Integer dislikes;
+    @Convert(converter = AtomicIntegerConverter.class)
+    private AtomicInteger dislikes = new AtomicInteger(0);
 
     @ManyToMany
     private Set<Tag> tags;
@@ -50,9 +54,24 @@ public class Video {
     @Enumerated(EnumType.STRING)
     private VideoStatus videoStatus;
 
-    private Integer viewCount;
+    private AtomicInteger viewCount = new AtomicInteger(0);
 
     @OneToMany(/*cascade = {CascadeType.REMOVE, CascadeType.MERGE},*/ mappedBy = "video", fetch = FetchType.LAZY)
     private List<Comment> comments;
 
+    public void incrementLikes() {
+        likes.incrementAndGet();
+    }
+
+    public void decrementLikes() {
+        likes.decrementAndGet();
+    }
+
+    public void incrementDislikes() {
+        dislikes.incrementAndGet();
+    }
+
+    public void decrementDislikes() {
+        dislikes.decrementAndGet();
+    }
 }

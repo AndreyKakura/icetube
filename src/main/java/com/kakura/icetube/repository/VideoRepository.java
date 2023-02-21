@@ -16,7 +16,7 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
     @Cacheable(key = "#id")
     Optional<Video> findById(Long id);
 
-    @CacheEvict(key = "#result.id")
+    @CacheEvict(key = "#video.id")
     Video save(Video video);
 
 }

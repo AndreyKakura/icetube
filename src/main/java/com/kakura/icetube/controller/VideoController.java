@@ -37,8 +37,7 @@ public class VideoController {
 
     @GetMapping("/{id}")
     public VideoDto findById(@PathVariable("id") Long id) {
-        return videoService.findById(id)
-                .orElseThrow(() -> new NotFoundException("Cannot find video by id: " + id));
+        return videoService.findById(id);
     }
 
     @GetMapping(value = "/preview/{id}", produces = MediaType.IMAGE_JPEG_VALUE)

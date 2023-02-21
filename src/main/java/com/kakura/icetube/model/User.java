@@ -52,6 +52,9 @@ public class User {
     @ManyToMany
     private Set<Video> dislikedVideos = new LinkedHashSet<>();
 
+    @ManyToMany
+    private Set<Video> watchedVideos = new LinkedHashSet<>();
+
     public void addToLikedVideos(Video video) {
         likedVideos.add(video);
     }
@@ -66,5 +69,9 @@ public class User {
 
     public void addToDislikedVideos(Video video) {
         dislikedVideos.add(video);
+    }
+
+    public void addToWatchedVideos(Video videoFromDb) {
+        watchedVideos.add(videoFromDb);
     }
 }

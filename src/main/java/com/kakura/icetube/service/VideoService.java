@@ -68,8 +68,23 @@ public class VideoService {
         return videoRepository.findAll().stream().map(videoMapper::toDto).collect(Collectors.toList());
     }
 
-    public Optional<VideoDto> findById(Long id) {
-        return videoRepository.findById(id).map(videoMapper::toDto);
+    @Transactional
+    public VideoDto findById(Long id) {
+        Video videoFromDb = videoRepository.findById(id).
+                orElseThrow(() -> new NotFoundException("Cannot find video by id " + id));
+
+        videoFromDb.incrementViewCount();
+        videoRepository.save(videoFromDb);
+
+        userService.addToWatchedVideos(videoFromDb);
+
+
+        return videoMapper.toDto(videoFromDb);
+    }
+
+    private void increaseViewCount(Video videoFromDb) {
+        videoFromDb.incrementViewCount();
+        videoRepository.save(videoFromDb);
     }
 
     @Transactional

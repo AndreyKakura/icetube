@@ -38,6 +38,7 @@ public class VideoMapper {
                 .videoStatus(video.getVideoStatus().name())
                 .likes(video.getLikes().get())
                 .dislikes(video.getDislikes().get())
+                .viewCount(video.getViewCount().get())
                 .previewUrl("/api/video/preview/" + video.getId())
                 .streamUrl("/api/video/stream/" + video.getId())
                 .build();

@@ -29,6 +29,8 @@ public class VideoDto {
 
     private Integer dislikes;
 
+    private Integer viewCount;
+
     private String previewUrl;
 
     private String streamUrl;

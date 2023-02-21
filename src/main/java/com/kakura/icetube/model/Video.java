@@ -47,13 +47,14 @@ public class Video {
     @Convert(converter = AtomicIntegerConverter.class)
     private AtomicInteger dislikes = new AtomicInteger(0);
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     private Set<Tag> tags;
 
 
     @Enumerated(EnumType.STRING)
     private VideoStatus videoStatus;
 
+    @Convert(converter = AtomicIntegerConverter.class)
     private AtomicInteger viewCount = new AtomicInteger(0);
 
     @OneToMany(/*cascade = {CascadeType.REMOVE, CascadeType.MERGE},*/ mappedBy = "video", fetch = FetchType.LAZY)
@@ -73,5 +74,9 @@ public class Video {
 
     public void decrementDislikes() {
         dislikes.decrementAndGet();
+    }
+
+    public void incrementViewCount() {
+        viewCount.incrementAndGet();
     }
 }

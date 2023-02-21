@@ -80,4 +80,9 @@ public class UserService {
         userRepository.save(currentUser);
     }
 
+    public void addToWatchedVideos(Video videoFromDb) {
+        User currentUser = getCurrentUser();
+        currentUser.addToWatchedVideos(videoFromDb);
+        userRepository.save(currentUser);
+    }
 }

@@ -41,12 +41,6 @@ public class User {
     private String password;
 
     @ManyToMany
-    private Set<User> subscriptions;
-
-    @ManyToMany
-    private Set<User> subscribers;
-
-    @ManyToMany
     private Set<Video> likedVideos = new LinkedHashSet<>();
 
     @ManyToMany
@@ -74,4 +68,5 @@ public class User {
     public void addToWatchedVideos(Video videoFromDb) {
         watchedVideos.add(videoFromDb);
     }
+
 }

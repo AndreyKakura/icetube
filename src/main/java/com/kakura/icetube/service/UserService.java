@@ -2,14 +2,18 @@ package com.kakura.icetube.service;
 
 import com.kakura.icetube.dto.RegistrationDto;
 import com.kakura.icetube.dto.UserDto;
+import com.kakura.icetube.exception.BadRequestException;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.UserMapper;
+import com.kakura.icetube.model.Subscription;
 import com.kakura.icetube.model.User;
 import com.kakura.icetube.model.Video;
 import com.kakura.icetube.repository.RoleRepository;
+import com.kakura.icetube.repository.SubscriptionRepository;
 import com.kakura.icetube.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,7 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final SubscriptionRepository subscriptionRepository;
 
     public UserDto saveUser(RegistrationDto registrationDto) {
         User user = userMapper.toModel(registrationDto);
@@ -85,4 +90,39 @@ public class UserService {
         currentUser.addToWatchedVideos(videoFromDb);
         userRepository.save(currentUser);
     }
+
+    @Transactional
+    public void subscribeToUser(Long id) {
+        User subscriber = getCurrentUser();
+        User subscribedTo = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Cannot find user by id" + id));
+
+        if (subscriber.equals(subscribedTo)) {
+            throw new BadRequestException("Cannot subscribe to yourself");
+        }
+
+        Subscription subscription = Subscription.builder()
+                .subscriber(subscriber)
+                .subscribedTo(subscribedTo)
+                .build();
+
+        try {
+            subscriptionRepository.save(subscription);
+        } catch (DataIntegrityViolationException e) {
+            throw new BadRequestException("Already subscribed to user with id " + id);
+        }
+    }
+
+    @Transactional
+    public void unsubscribeFromUser(Long id) {
+        User subscriber = getCurrentUser();
+        User subscribedTo = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Cannot find user by id" + id));
+
+        Subscription subscription = subscriptionRepository.findBySubscriberAndSubscribedTo(subscriber, subscribedTo)
+                .orElseThrow(() -> new NotFoundException("Subscription not found"));
+
+        subscriptionRepository.delete(subscription);
+    }
+
 }

@@ -1,7 +1,12 @@
 package com.kakura.icetube.service;
 
+import com.kakura.icetube.dto.CommentDto;
 import com.kakura.icetube.exception.NotFoundException;
+import com.kakura.icetube.mapper.CommentMapper;
 import com.kakura.icetube.mapper.VideoMapper;
+import com.kakura.icetube.model.Comment;
+import com.kakura.icetube.model.User;
+import com.kakura.icetube.repository.CommentRepository;
 import com.kakura.icetube.repository.TagRepository;
 import com.kakura.icetube.repository.VideoRepository;
 import com.kakura.icetube.dto.EditVideoDto;
@@ -54,13 +59,19 @@ public class VideoService {
 
     private final UserService userService;
 
+    private final CommentMapper commentMapper;
+
+    private final CommentRepository commentRepository;
+
     @Autowired
-    public VideoService(VideoRepository videoRepository, TagRepository tagRepository, FrameGrabberService frameGrabberService, VideoMapper videoMapper, UserService userService) {
+    public VideoService(VideoRepository videoRepository, TagRepository tagRepository, FrameGrabberService frameGrabberService, VideoMapper videoMapper, UserService userService, CommentMapper commentMapper, CommentRepository commentRepository) {
         this.videoRepository = videoRepository;
         this.tagRepository = tagRepository;
         this.frameGrabberService = frameGrabberService;
         this.videoMapper = videoMapper;
         this.userService = userService;
+        this.commentMapper = commentMapper;
+        this.commentRepository = commentRepository;
     }
 
 
@@ -76,8 +87,9 @@ public class VideoService {
         videoFromDb.incrementViewCount();
         videoRepository.save(videoFromDb);
 
-        userService.addToWatchedVideos(videoFromDb);
-
+        if (userService.isLoggedIn()) {
+            userService.addToWatchedVideos(videoFromDb);
+        }
 
         return videoMapper.toDto(videoFromDb);
     }
@@ -256,6 +268,38 @@ public class VideoService {
 
         return videoMapper.toDto(videoFromDb);
 
+    }
+
+    public void addComment(Long id, CommentDto commentDto) {
+        Video videoFromDb = videoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Cannot find video by id - " + id));
+
+        Comment comment = commentMapper.toModel(commentDto);
+
+        User user = userService.getCurrentUser();
+
+        comment.setUser(user);
+        comment.setVideo(videoFromDb);
+
+        commentRepository.save(comment);
+
+        videoFromDb.addComment(comment);
+
+        videoRepository.save(videoFromDb);
+    }
+
+    public List<CommentDto> getAllComments(Long id) {
+        Video videoFromDb = videoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Cannot find video by id - " + id));
+
+        List<Comment> comments = videoFromDb.getComments();
+
+        return comments.stream().map(commentMapper::toDto).toList();
+    }
+
+    public Set<VideoDto> getVideoHistory() {
+        User currentUser = userService.getCurrentUser();
+        return currentUser.getWatchedVideos().stream().map(videoMapper::toDto).collect(Collectors.toSet());
     }
 
 }

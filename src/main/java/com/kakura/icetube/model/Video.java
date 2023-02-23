@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,7 +59,7 @@ public class Video {
     private AtomicInteger viewCount = new AtomicInteger(0);
 
     @OneToMany(/*cascade = {CascadeType.REMOVE, CascadeType.MERGE},*/ mappedBy = "video", fetch = FetchType.LAZY)
-    private List<Comment> comments;
+    private List<Comment> comments = new ArrayList<>();
 
     public void incrementLikes() {
         likes.incrementAndGet();
@@ -78,5 +79,9 @@ public class Video {
 
     public void incrementViewCount() {
         viewCount.incrementAndGet();
+    }
+
+    public void addComment(Comment comment) {
+        comments.add(comment);
     }
 }

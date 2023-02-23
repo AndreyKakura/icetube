@@ -1,26 +1,21 @@
 package com.kakura.icetube.controller;
 
-import com.kakura.icetube.dto.EditVideoDto;
-import com.kakura.icetube.dto.NewVideoDto;
-import com.kakura.icetube.dto.UploadVideoResponse;
-import com.kakura.icetube.dto.VideoDto;
+import com.kakura.icetube.dto.*;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.service.StreamBytesInfo;
 import com.kakura.icetube.service.VideoService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/video")
@@ -107,6 +102,21 @@ public class VideoController {
     @PostMapping("/{id}/dislike")
     public VideoDto dislikeVideo(@PathVariable("id") Long id) {
         return videoService.dislikeVideo(id);
+    }
+
+    @PostMapping("/{id}/comment")
+    public void addComment(@PathVariable("id") Long id, @RequestBody CommentDto commentDto) {
+        videoService.addComment(id, commentDto);
+    }
+
+    @GetMapping("/{id}/comment")
+    public List<CommentDto> getAllComments(@PathVariable("id") Long id) {
+       return videoService.getAllComments(id);
+    }
+
+    @GetMapping("/history")
+    public Set<VideoDto> getVideoHistory() {
+        return videoService.getVideoHistory();
     }
 
 }

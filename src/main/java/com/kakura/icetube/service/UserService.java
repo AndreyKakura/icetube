@@ -53,6 +53,12 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Cannot find user by username " + username));
     }
 
+    public boolean isLoggedIn() {
+        String username = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        return userRepository.existsUserByUsername(username);
+    }
+
     public void addToLikedVideos(Video video) {
         User currentUser = getCurrentUser();
         currentUser.addToLikedVideos(video);

@@ -107,7 +107,7 @@ public class VideoController {
     }
 
     @PostMapping("/{id}/comment")
-    public void addComment(@PathVariable("id") Long id, @RequestBody CommentDto commentDto) {
+    public void addComment(@PathVariable("id") Long id, @RequestBody @Valid CommentDto commentDto) {
         videoService.addComment(id, commentDto);
     }
 

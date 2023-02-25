@@ -2,18 +2,19 @@ package com.kakura.icetube.model;
 
 import com.kakura.icetube.model.converter.AtomicIntegerConverter;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Entity
-@Data
+//@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -83,5 +84,22 @@ public class Video {
 
     public void addComment(Comment comment) {
         comments.add(comment);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Video)) {
+            return false;
+        }
+        Video other = (Video) obj;
+        return Objects.equals(id, other.id);
     }
 }

@@ -35,5 +35,11 @@ public class VideoDto {
 
     private String streamUrl;
 
+    private String authorName;
+
+    private Long authorId;
+
+    private Boolean isSubscribedToAuthor;
+
 
 }

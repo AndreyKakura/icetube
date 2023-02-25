@@ -131,4 +131,9 @@ public class UserService {
         subscriptionRepository.delete(subscription);
     }
 
+    public Boolean isSubscribedToAuthor(User author) {
+        User currentUser = getCurrentUser();
+        Optional<Subscription> optionalSubscription = subscriptionRepository.findBySubscriberAndSubscribedTo(currentUser, author);
+        return optionalSubscription.isPresent();
+    }
 }

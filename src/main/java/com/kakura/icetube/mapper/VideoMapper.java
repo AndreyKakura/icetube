@@ -41,6 +41,8 @@ public class VideoMapper {
                 .viewCount(video.getViewCount().get())
                 .previewUrl("/api/video/preview/" + video.getId())
                 .streamUrl("/api/video/stream/" + video.getId())
+                .authorName(video.getUser().getUsername())
+                .authorId(video.getUser().getId())
                 .build();
     }
 

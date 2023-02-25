@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -68,6 +69,7 @@ public class VideoController {
 
     }
 
+    @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping(path = "/upload")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?> uploadVideo(@ModelAttribute @Valid NewVideoDto newVideoDto) {

@@ -86,17 +86,15 @@ public class VideoService {
 
         videoFromDb.incrementViewCount();
         videoRepository.save(videoFromDb);
+        VideoDto videoDto = videoMapper.toDto(videoFromDb);
 
         if (userService.isLoggedIn()) {
             userService.addToWatchedVideos(videoFromDb);
+            videoDto.setIsSubscribedToAuthor(userService.isSubscribedToAuthor(videoFromDb.getUser()));
         }
 
-        return videoMapper.toDto(videoFromDb);
-    }
 
-    private void increaseViewCount(Video videoFromDb) {
-        videoFromDb.incrementViewCount();
-        videoRepository.save(videoFromDb);
+        return videoDto;
     }
 
     @Transactional
@@ -105,6 +103,8 @@ public class VideoService {
         if (newVideoDto.getTags() != null) {
             video.setTags(convertStringsToTags(newVideoDto.getTags()));
         }
+        video.setUser(userService.getCurrentUser());
+
         Video savedVideo = videoRepository.save(video);
 
         Path directory = Path.of(dataFolder, video.getId().toString());

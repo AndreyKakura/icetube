@@ -22,13 +22,15 @@ public class UserController {
 
 
     @PostMapping("/subscribe/{id}")
-    public void subscribeToUser(@PathVariable("id") Long id) {
+    public boolean subscribeToUser(@PathVariable("id") Long id) {
         userService.subscribeToUser(id);
+        return true;
     }
 
     @PostMapping("/unsubscribe/{id}")
-    public void unsubscribeFromUser(@PathVariable("id") Long id) {
+    public boolean unsubscribeFromUser(@PathVariable("id") Long id) {
         userService.unsubscribeFromUser(id);
+        return false;
     }
 
 }

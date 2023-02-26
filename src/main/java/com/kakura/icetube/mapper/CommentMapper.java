@@ -20,6 +20,8 @@ public class CommentMapper {
         CommentDto commentDto = CommentDto.builder()
                 .text(comment.getText())
                 .userId(comment.getUser().getId())
+                .username(comment.getUser().getUsername())
+                .createdAt(comment.getCreatedAt())
                 .build();
         return commentDto;
     }

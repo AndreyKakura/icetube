@@ -4,6 +4,7 @@ import com.kakura.icetube.model.converter.AtomicIntegerConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -38,6 +39,8 @@ public class Video {
     private String title;
 
     private String description;
+
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = true) //todo change to nullable = false

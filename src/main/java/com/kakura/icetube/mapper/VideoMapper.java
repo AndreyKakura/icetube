@@ -7,6 +7,7 @@ import com.kakura.icetube.model.Video;
 import com.kakura.icetube.model.VideoStatus;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,7 @@ public class VideoMapper {
                 .fileSize(newVideoDto.getVideoFile().getSize())
                 .title(newVideoDto.getTitle())
                 .description(newVideoDto.getDescription())
+                .createdAt(LocalDateTime.now())
                 .likes(new AtomicInteger(0))
                 .dislikes(new AtomicInteger(0))
                 .viewCount(new AtomicInteger(0))
@@ -43,6 +45,7 @@ public class VideoMapper {
                 .streamUrl("/api/video/stream/" + video.getId())
                 .authorName(video.getUser().getUsername())
                 .authorId(video.getUser().getId())
+                .createdAt(video.getCreatedAt())
                 .build();
     }
 

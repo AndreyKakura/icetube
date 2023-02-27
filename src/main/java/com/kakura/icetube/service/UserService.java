@@ -2,9 +2,11 @@ package com.kakura.icetube.service;
 
 import com.kakura.icetube.dto.RegistrationDto;
 import com.kakura.icetube.dto.UserDto;
+import com.kakura.icetube.dto.VideoDto;
 import com.kakura.icetube.exception.BadRequestException;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.UserMapper;
+import com.kakura.icetube.mapper.VideoMapper;
 import com.kakura.icetube.model.Subscription;
 import com.kakura.icetube.model.User;
 import com.kakura.icetube.model.Video;
@@ -33,6 +35,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final SubscriptionRepository subscriptionRepository;
+    private final VideoMapper videoMapper;
 
     public UserDto saveUser(RegistrationDto registrationDto) {
         User user = userMapper.toModel(registrationDto);
@@ -136,4 +139,22 @@ public class UserService {
         Optional<Subscription> optionalSubscription = subscriptionRepository.findBySubscriberAndSubscribedTo(currentUser, author);
         return optionalSubscription.isPresent();
     }
+
+    public List<VideoDto> getLikedVideos() {
+        User currentUser = getCurrentUser();
+        return currentUser.getLikedVideos().stream().map(videoMapper::toDto).toList();
+    }
+
+    public List<UserDto> getSubscriptions() {
+        User currentUser = getCurrentUser();
+        return subscriptionRepository.findBySubscriber(currentUser).stream()
+                .map(subscription -> userMapper.toDto(subscription.getSubscribedTo())).toList();
+    }
+
+    public UserDto getById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Cannot find user by id " + userId));
+        return userMapper.toDto(user);
+    }
+
 }

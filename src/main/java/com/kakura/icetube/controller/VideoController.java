@@ -31,6 +31,16 @@ public class VideoController {
         return videoService.findAll();
     }
 
+    @GetMapping(value = "/publishedby/{userId}")
+    public List<VideoDto> findAllByUserId(@PathVariable("userId") Long userId) {
+        return  videoService.findAllByUserId(userId);
+    }
+
+    @GetMapping("/subscriptions")
+    public List<VideoDto> getSubscribedVideos() {
+        return videoService.getSubscribedVideos();
+    }
+
     @GetMapping("/{id}")
     public VideoDto findById(@PathVariable("id") Long id) {
         return videoService.findById(id);

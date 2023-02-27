@@ -4,16 +4,14 @@ import com.kakura.icetube.dto.CommentDto;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.CommentMapper;
 import com.kakura.icetube.mapper.VideoMapper;
-import com.kakura.icetube.model.Comment;
-import com.kakura.icetube.model.User;
+import com.kakura.icetube.model.*;
 import com.kakura.icetube.repository.CommentRepository;
+import com.kakura.icetube.repository.SubscriptionRepository;
 import com.kakura.icetube.repository.TagRepository;
 import com.kakura.icetube.repository.VideoRepository;
 import com.kakura.icetube.dto.EditVideoDto;
 import com.kakura.icetube.dto.NewVideoDto;
 import com.kakura.icetube.dto.VideoDto;
-import com.kakura.icetube.model.Tag;
-import com.kakura.icetube.model.Video;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,8 +61,10 @@ public class VideoService {
 
     private final CommentRepository commentRepository;
 
+    private final SubscriptionRepository subscriptionRepository;
+
     @Autowired
-    public VideoService(VideoRepository videoRepository, TagRepository tagRepository, FrameGrabberService frameGrabberService, VideoMapper videoMapper, UserService userService, CommentMapper commentMapper, CommentRepository commentRepository) {
+    public VideoService(VideoRepository videoRepository, TagRepository tagRepository, FrameGrabberService frameGrabberService, VideoMapper videoMapper, UserService userService, CommentMapper commentMapper, CommentRepository commentRepository, SubscriptionRepository subscriptionRepository) {
         this.videoRepository = videoRepository;
         this.tagRepository = tagRepository;
         this.frameGrabberService = frameGrabberService;
@@ -72,6 +72,7 @@ public class VideoService {
         this.userService = userService;
         this.commentMapper = commentMapper;
         this.commentRepository = commentRepository;
+        this.subscriptionRepository = subscriptionRepository;
     }
 
 
@@ -302,4 +303,17 @@ public class VideoService {
         return currentUser.getWatchedVideos().stream().map(videoMapper::toDto).collect(Collectors.toSet());
     }
 
+    public List<VideoDto> findAllByUserId(Long userId) {
+        return videoRepository.findAllByUserId(userId).stream().map(videoMapper::toDto).toList();
+    }
+
+    public List<VideoDto> getSubscribedVideos() {
+        User currentUser = userService.getCurrentUser();
+        List<User> userSubscriptions = subscriptionRepository.findBySubscriber(currentUser).stream()
+                .map(Subscription::getSubscribedTo).toList();
+
+        List<Video> videos = videoRepository.findByUserIn(userSubscriptions);
+
+        return videos.stream().map(videoMapper::toDto).toList();
+    }
 }

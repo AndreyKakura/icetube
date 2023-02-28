@@ -1,5 +1,6 @@
 package com.kakura.icetube.model;
 
+import com.kakura.icetube.model.converter.AtomicIntegerConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Entity
 @Table(name = "users")
@@ -49,6 +51,9 @@ public class User {
     @ManyToMany
     private Set<Video> watchedVideos = new LinkedHashSet<>();
 
+    @Convert(converter = AtomicIntegerConverter.class)
+    private AtomicInteger subscribersCount = new AtomicInteger(0);
+
     public void addToLikedVideos(Video video) {
         likedVideos.add(video);
     }
@@ -67,6 +72,14 @@ public class User {
 
     public void addToWatchedVideos(Video videoFromDb) {
         watchedVideos.add(videoFromDb);
+    }
+
+    public void incrementSubscribersCount() {
+        subscribersCount.incrementAndGet();
+    }
+
+    public void decrementSubscribersCount() {
+        subscribersCount.decrementAndGet();
     }
 
 }

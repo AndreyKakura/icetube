@@ -114,7 +114,8 @@ public class UserService {
                 .subscriber(subscriber)
                 .subscribedTo(subscribedTo)
                 .build();
-
+        subscribedTo.incrementSubscribersCount();
+        userRepository.save(subscribedTo);
         try {
             subscriptionRepository.save(subscription);
         } catch (DataIntegrityViolationException e) {
@@ -127,6 +128,9 @@ public class UserService {
         User subscriber = getCurrentUser();
         User subscribedTo = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Cannot find user by id" + id));
+
+        subscribedTo.decrementSubscribersCount();
+        userRepository.save(subscribedTo);
 
         Subscription subscription = subscriptionRepository.findBySubscriberAndSubscribedTo(subscriber, subscribedTo)
                 .orElseThrow(() -> new NotFoundException("Subscription not found"));
@@ -154,7 +158,11 @@ public class UserService {
     public UserDto getById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Cannot find user by id " + userId));
-        return userMapper.toDto(user);
+        UserDto userDto = userMapper.toDto(user);
+        if(isLoggedIn()) {
+            userDto.setIsSubscribed(isSubscribedToAuthor(user));
+        }
+        return userDto;
     }
 
 }

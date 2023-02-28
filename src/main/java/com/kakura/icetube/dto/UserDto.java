@@ -22,4 +22,8 @@ public class UserDto {
     private String surname;
 
     private Collection<String> roles;
+
+    private Integer subscribersCount;
+
+    private Boolean isSubscribed;
 }

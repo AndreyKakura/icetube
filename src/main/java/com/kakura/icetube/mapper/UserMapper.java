@@ -7,6 +7,7 @@ import com.kakura.icetube.model.User;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class UserMapper {
@@ -19,6 +20,7 @@ public class UserMapper {
                 .name(user.getName())
                 .surname(user.getSurname())
                 .roles(roles)
+                .subscribersCount(user.getSubscribersCount().get())
                 .build();
     }
 
@@ -27,6 +29,7 @@ public class UserMapper {
                 .username(registrationDto.getUsername())
                 .name(registrationDto.getName())
                 .surname(registrationDto.getSurname())
+                .subscribersCount(new AtomicInteger(0))
                 .build();
     }
 }

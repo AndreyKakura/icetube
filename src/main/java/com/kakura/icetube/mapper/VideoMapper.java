@@ -13,11 +13,15 @@ import java.util.stream.Collectors;
 @Component
 public class VideoMapper {
     public Video toModel(NewVideoDto newVideoDto) {
-        return Video.builder()
+        System.out.println(newVideoDto.getPreviewFile().getContentType());
+        String previewFileName = newVideoDto.getPreviewFile().getOriginalFilename();
+            String previewExtension = previewFileName.substring(previewFileName.lastIndexOf("."));
+        System.out.println(previewExtension);
+            return Video.builder()
                 .videoFileName(newVideoDto.getVideoFile().getOriginalFilename())
                 .previewFileName(newVideoDto.getPreviewFile().getOriginalFilename())
                 .videoContentType(newVideoDto.getVideoFile().getContentType())
-                .previewContentType(newVideoDto.getPreviewFile().getContentType().replace("image/", "."))
+                .previewContentType(previewExtension)
                 .fileSize(newVideoDto.getVideoFile().getSize())
                 .title(newVideoDto.getTitle())
                 .description(newVideoDto.getDescription())

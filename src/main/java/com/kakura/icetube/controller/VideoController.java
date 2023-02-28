@@ -7,6 +7,7 @@ import com.kakura.icetube.service.VideoService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,6 +48,7 @@ public class VideoController {
     }
 
     @GetMapping(value = "/preview/{id}", produces = MediaType.IMAGE_JPEG_VALUE)
+    @Cacheable(value = "previews", key = "#id")
     public ResponseEntity<ByteArrayResource> getPreviewPicture(@PathVariable("id") Long id) {
         byte[] imageBytes = videoService.getPreviewBytes(id);
         ByteArrayResource resource = new ByteArrayResource(imageBytes);

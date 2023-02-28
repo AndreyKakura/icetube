@@ -55,10 +55,6 @@ public class Video {
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Tag> tags;
 
-
-    @Enumerated(EnumType.STRING)
-    private VideoStatus videoStatus;
-
     @Convert(converter = AtomicIntegerConverter.class)
     private AtomicInteger viewCount = new AtomicInteger(0);
 

@@ -24,8 +24,6 @@ public class VideoDto {
 
     private Set<String> tags;
 
-    private String videoStatus;
-
     private Integer likes;
 
     private Integer dislikes;

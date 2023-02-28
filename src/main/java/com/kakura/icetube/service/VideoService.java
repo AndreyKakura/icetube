@@ -188,7 +188,6 @@ public class VideoService {
         videoFromDb.setTags(convertStringsToTags(editVideoDto.getTags()));
 //        videoFromDb.setPreviewUrl(editVideoDto.getPreviewUrl()); //TODO
         //setVideoUrl //TODO
-        videoFromDb.setVideoStatus(editVideoDto.getVideoStatus()); //TODO
         videoRepository.save(videoFromDb);
         return editVideoDto;
     }

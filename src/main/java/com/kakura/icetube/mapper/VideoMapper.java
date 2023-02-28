@@ -4,7 +4,6 @@ import com.kakura.icetube.dto.NewVideoDto;
 import com.kakura.icetube.dto.VideoDto;
 import com.kakura.icetube.model.Tag;
 import com.kakura.icetube.model.Video;
-import com.kakura.icetube.model.VideoStatus;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -26,7 +25,6 @@ public class VideoMapper {
                 .likes(new AtomicInteger(0))
                 .dislikes(new AtomicInteger(0))
                 .viewCount(new AtomicInteger(0))
-                .videoStatus(VideoStatus.valueOf(newVideoDto.getVideoStatus()))
                 .build();
     }
 
@@ -37,7 +35,6 @@ public class VideoMapper {
                 .description(video.getDescription())
                 .contentType(video.getVideoContentType())
                 .tags(video.getTags().stream().map(Tag::getTagText).collect(Collectors.toSet()))
-                .videoStatus(video.getVideoStatus().name())
                 .likes(video.getLikes().get())
                 .dislikes(video.getDislikes().get())
                 .viewCount(video.getViewCount().get())

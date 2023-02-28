@@ -1,6 +1,5 @@
 package com.kakura.icetube.dto;
 
-import com.kakura.icetube.model.VideoStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,7 +22,5 @@ public class EditVideoDto {
     private String streamUrl;
 
     private Set<String> tags;
-
-    private VideoStatus videoStatus;
 
 }

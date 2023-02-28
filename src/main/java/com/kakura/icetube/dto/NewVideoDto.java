@@ -21,9 +21,6 @@ public class NewVideoDto {
     @NotBlank
     private String description;
 
-    @NotBlank
-    private String videoStatus;
-
     private Set<String> tags;
 
     @NotNull

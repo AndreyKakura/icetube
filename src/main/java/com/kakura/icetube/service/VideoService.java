@@ -155,7 +155,7 @@ public class VideoService {
         }
         try {
             long fileSize = Files.size(filePath);
-            long chunkSize = fileSize / 100;
+            long chunkSize = fileSize / 50;
             if (range == null) {
                 return Optional.of(new StreamBytesInfo(out -> Files.newInputStream(filePath).transferTo(out), fileSize, 0, fileSize, byId.get().getVideoContentType()));
             }

@@ -1,6 +1,7 @@
 package com.kakura.icetube.controller;
 
 import com.kakura.icetube.dto.*;
+import com.kakura.icetube.exception.BadRequestException;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.service.StreamBytesInfo;
 import com.kakura.icetube.service.VideoService;
@@ -28,18 +29,26 @@ public class VideoController {
     private final VideoService videoService;
 
     @GetMapping()
-    public List<VideoDto> findAll() {
-        return videoService.findAll();
+    public VideoPageDto findPage(@RequestParam(defaultValue = "0") Integer pageNumber,
+                                 @RequestParam(defaultValue = "12") Integer pageSize) {
+
+        if (pageNumber < 0 || pageSize < 1) {
+            throw new BadRequestException("Bad request");
+        }
+
+        return videoService.findPage(pageNumber, pageSize);
     }
 
     @GetMapping(value = "/publishedby/{userId}")
-    public List<VideoDto> findAllByUserId(@PathVariable("userId") Long userId) {
-        return  videoService.findAllByUserId(userId);
+    public VideoPageDto findPublishedByUserPage(@PathVariable("userId") Long userId, @RequestParam(defaultValue = "0") Integer pageNumber,
+                                                @RequestParam(defaultValue = "12") Integer pageSize) {
+        return videoService.findPublishedByUserIdPage(userId, pageNumber, pageSize);
     }
 
     @GetMapping("/subscriptions")
-    public List<VideoDto> getSubscribedVideos() {
-        return videoService.getSubscribedVideos();
+    public VideoPageDto getSubscribedVideos(@RequestParam(defaultValue = "0") Integer pageNumber,
+                                            @RequestParam(defaultValue = "12") Integer pageSize) {
+        return videoService.getSubscribedVideosPage(pageNumber, pageSize);
     }
 
     @GetMapping("/{id}")
@@ -125,12 +134,19 @@ public class VideoController {
 
     @GetMapping("/{id}/comment")
     public List<CommentDto> getAllComments(@PathVariable("id") Long id) {
-       return videoService.getAllComments(id);
+        return videoService.getAllComments(id);
     }
 
     @GetMapping("/history")
-    public Set<VideoDto> getVideoHistory() {
-        return videoService.getVideoHistory();
+    public VideoPageDto getVideoHistory(@RequestParam(defaultValue = "0") Integer pageNumber,
+                                        @RequestParam(defaultValue = "12") Integer pageSize) {
+        return videoService.getVideoHistoryPage(pageNumber, pageSize);
+    }
+
+    @GetMapping(value = "/liked")
+    public VideoPageDto getLiked(@RequestParam(defaultValue = "0") Integer pageNumber,
+                                   @RequestParam(defaultValue = "12") Integer pageSize) {
+        return videoService.getLikedVideos(pageNumber, pageSize);
     }
 
 }

@@ -43,12 +43,22 @@ public class User {
     private String password;
 
     @ManyToMany
+    @JoinTable(
+            name = "users_liked_videos",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "liked_videos_id")
+    )
     private Set<Video> likedVideos = new LinkedHashSet<>();
 
     @ManyToMany
     private Set<Video> dislikedVideos = new LinkedHashSet<>();
 
     @ManyToMany
+    @JoinTable(
+            name = "users_watched_videos",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "watched_videos_id")
+    )
     private Set<Video> watchedVideos = new LinkedHashSet<>();
 
     @Convert(converter = AtomicIntegerConverter.class)

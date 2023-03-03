@@ -5,10 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Entity
@@ -45,6 +42,12 @@ public class Video {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = true) //todo change to nullable = false
     private User user;
+
+    @ManyToMany(mappedBy = "watchedVideos")
+    private Set<User> usersWhoWatched = new LinkedHashSet<>();
+
+    @ManyToMany(mappedBy = "likedVideos")
+    private Set<User> usersWhoLiked = new LinkedHashSet<>();
 
     @Convert(converter = AtomicIntegerConverter.class)
     private AtomicInteger likes = new AtomicInteger(0);

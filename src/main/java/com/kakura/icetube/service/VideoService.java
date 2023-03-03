@@ -1,6 +1,6 @@
 package com.kakura.icetube.service;
 
-import com.kakura.icetube.dto.CommentDto;
+import com.kakura.icetube.dto.*;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.CommentMapper;
 import com.kakura.icetube.mapper.VideoMapper;
@@ -9,12 +9,12 @@ import com.kakura.icetube.repository.CommentRepository;
 import com.kakura.icetube.repository.SubscriptionRepository;
 import com.kakura.icetube.repository.TagRepository;
 import com.kakura.icetube.repository.VideoRepository;
-import com.kakura.icetube.dto.EditVideoDto;
-import com.kakura.icetube.dto.NewVideoDto;
-import com.kakura.icetube.dto.VideoDto;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpRange;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +26,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.kakura.icetube.util.VideoUtil.removeFileExt;
@@ -76,8 +73,14 @@ public class VideoService {
     }
 
 
-    public List<VideoDto> findAll() {
-        return videoRepository.findAll().stream().map(videoMapper::toDto).collect(Collectors.toList());
+    public VideoPageDto findPage(int pageNumber, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Video> videos = videoRepository.findAll(pageable);
+        if (videos.hasContent()) {
+            return new VideoPageDto(videos.stream().map(videoMapper::toDto).collect(Collectors.toList()), videos.getTotalPages());
+        } else {
+            return new VideoPageDto(null, videos.getTotalPages());
+        }
     }
 
     @Transactional
@@ -297,22 +300,49 @@ public class VideoService {
         return comments.stream().map(commentMapper::toDto).toList();
     }
 
-    public Set<VideoDto> getVideoHistory() {
+    public VideoPageDto getVideoHistoryPage(int pageNumber, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
         User currentUser = userService.getCurrentUser();
-        return currentUser.getWatchedVideos().stream().map(videoMapper::toDto).collect(Collectors.toSet());
+        Page<Video> videos = videoRepository.findByUsersWhoWatchedIn(List.of(currentUser), pageable);
+        if (videos.hasContent()) {
+            return new VideoPageDto(videos.stream().map(videoMapper::toDto).collect(Collectors.toList()), videos.getTotalPages());
+        } else {
+            return new VideoPageDto(null, videos.getTotalPages());
+        }
     }
 
-    public List<VideoDto> findAllByUserId(Long userId) {
-        return videoRepository.findAllByUserId(userId).stream().map(videoMapper::toDto).toList();
+    public VideoPageDto findPublishedByUserIdPage(Long userId, int pageNumber, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Video> videos = videoRepository.findAllByUserId(userId, pageable);
+        if (videos.hasContent()) {
+            return new VideoPageDto(videos.stream().map(videoMapper::toDto).collect(Collectors.toList()), videos.getTotalPages());
+        } else {
+            return new VideoPageDto(null, videos.getTotalPages());
+        }
+//        return videoRepository.findAllByUserId(userId).stream().map(videoMapper::toDto).toList();
     }
 
-    public List<VideoDto> getSubscribedVideos() {
+    public VideoPageDto getSubscribedVideosPage(int pageNumber, int pageSize) {
         User currentUser = userService.getCurrentUser();
         List<User> userSubscriptions = subscriptionRepository.findBySubscriber(currentUser).stream()
                 .map(Subscription::getSubscribedTo).toList();
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Video> videos = videoRepository.findByUserIn(userSubscriptions, pageable);
+        if (videos.hasContent()) {
+            return new VideoPageDto(videos.stream().map(videoMapper::toDto).collect(Collectors.toList()), videos.getTotalPages());
+        } else {
+            return new VideoPageDto(null, videos.getTotalPages());
+        }
+    }
 
-        List<Video> videos = videoRepository.findByUserIn(userSubscriptions);
-
-        return videos.stream().map(videoMapper::toDto).toList();
+    public VideoPageDto getLikedVideos(int pageNumber, int pageSize) {
+        User currentUser = userService.getCurrentUser();
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Video> videos = videoRepository.findByUsersWhoLikedIn(List.of(currentUser), pageable);
+        if (videos.hasContent()) {
+            return new VideoPageDto(videos.stream().map(videoMapper::toDto).collect(Collectors.toList()), videos.getTotalPages());
+        } else {
+            return new VideoPageDto(null, videos.getTotalPages());
+        }
     }
 }

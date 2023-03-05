@@ -10,6 +10,7 @@ import com.kakura.icetube.dto.LoginDto;
 import com.kakura.icetube.dto.RegistrationDto;
 import com.kakura.icetube.dto.UserDto;
 import com.kakura.icetube.exception.BadRequestException;
+import com.kakura.icetube.exception.ForbiddenException;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.exception.UnauthorizedException;
 import com.kakura.icetube.model.Role;
@@ -89,12 +90,13 @@ public class AuthController {
         }
         String username = loginDto.getUsername();
         String password = loginDto.getPassword();
+
+        User user = userService.getUserByUsername(username)
+                .orElseThrow(() -> new ForbiddenException("Incorrect username: " + username));
+
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
 
         authenticationManager.authenticate(authenticationToken);
-
-        User user = userService.getUserByUsername(username)
-                .orElseThrow(() -> new NotFoundException("Cannot find user by username: " + username));
 
         Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY.getBytes());
         String accessToken = JWT.create()

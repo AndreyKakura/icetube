@@ -66,9 +66,10 @@ public class VideoController {
 
     @GetMapping("/stream/{id}")
     public ResponseEntity<StreamingResponseBody> streamVideo(@RequestHeader(value = "Range", required = false) String httpRangeHeader,
-                                                             @PathVariable("id") Long id) {
+                                                             @PathVariable("id") Long id,
+                                                             @RequestParam("quality") String quality) {
         List<HttpRange> httpRangeList = HttpRange.parseRanges(httpRangeHeader);
-        StreamBytesInfo streamBytesInfo = videoService.getStreamBytes(id, httpRangeList.size() > 0 ? httpRangeList.get(0) : null)
+        StreamBytesInfo streamBytesInfo = videoService.getStreamBytes(id, httpRangeList.size() > 0 ? httpRangeList.get(0) : null, quality)
                 .orElseThrow(() -> new NotFoundException("Cannot get stream bytes"));
 
         long byteLength = streamBytesInfo.getRangeEnd() - streamBytesInfo.getRangeStart() + 1;
@@ -94,14 +95,15 @@ public class VideoController {
     @PostMapping(path = "/upload")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?> uploadVideo(@ModelAttribute @Valid NewVideoDto newVideoDto) {
-        VideoDto videoDtoResponse = null;
+//        VideoDto videoDtoResponse = null;
         try {
-            videoDtoResponse = videoService.saveNewVideo(newVideoDto);
+//            videoDtoResponse = videoService.saveNewVideo(newVideoDto);
+            videoService.saveNewVideo(newVideoDto);
         } catch (Exception ex) {
             log.error(ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(videoDtoResponse);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
 
     }
 

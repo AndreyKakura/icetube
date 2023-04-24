@@ -39,6 +39,8 @@ public class Video {
 
     private LocalDateTime createdAt;
 
+    private int videoResolution;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = true) //todo change to nullable = false
     private User user;

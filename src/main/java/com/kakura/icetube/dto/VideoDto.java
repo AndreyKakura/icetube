@@ -41,4 +41,6 @@ public class VideoDto {
     private Boolean isSubscribedToAuthor;
 
     private LocalDateTime createdAt;
+
+    private Integer videoResolution;
 }

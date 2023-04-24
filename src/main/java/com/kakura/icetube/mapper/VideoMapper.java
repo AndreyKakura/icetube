@@ -47,6 +47,7 @@ public class VideoMapper {
                 .authorName(video.getUser().getUsername())
                 .authorId(video.getUser().getId())
                 .createdAt(video.getCreatedAt())
+                .videoResolution(video.getVideoResolution())
                 .build();
     }
 

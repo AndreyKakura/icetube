@@ -22,19 +22,22 @@ import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -152,7 +155,7 @@ public class VideoService {
                 newVideoDto.getVideoFile().getInputStream().transferTo(out);
             }
 
-                        Path previewPath = Path.of(directory.toString(), newVideoDto.getPreviewFile().getOriginalFilename());
+            Path previewPath = Path.of(directory.toString(), newVideoDto.getPreviewFile().getOriginalFilename());
             try (OutputStream out = Files.newOutputStream(previewPath, CREATE, WRITE)) {
                 newVideoDto.getPreviewFile().getInputStream().transferTo(out);
             }
@@ -602,5 +605,30 @@ public class VideoService {
         } else {
             return new VideoPageDto(null, videos.getTotalPages());
         }
+    }
+
+    public ResponseEntity<Resource> downloadVideo(Long id, String quality) {
+
+        Video videoById = videoRepository.findById(id).
+                orElseThrow(() -> new NotFoundException("Cannot find video by id " + id));
+
+        Path filePath = Path.of(dataFolder, id.toString(), quality, videoById.getVideoFileName());
+
+        File file = new File(filePath.toString());
+        InputStreamResource resource;
+        try {
+            resource = new InputStreamResource(new FileInputStream(file));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + videoById.getVideoFileName());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(file.length())
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
     }
 }

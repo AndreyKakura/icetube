@@ -8,14 +8,19 @@ import com.kakura.icetube.service.VideoService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
@@ -147,8 +152,13 @@ public class VideoController {
 
     @GetMapping(value = "/liked")
     public VideoPageDto getLiked(@RequestParam(defaultValue = "0") Integer pageNumber,
-                                   @RequestParam(defaultValue = "12") Integer pageSize) {
+                                 @RequestParam(defaultValue = "12") Integer pageSize) {
         return videoService.getLikedVideos(pageNumber, pageSize);
+    }
+
+    @GetMapping("download/{id}")
+    public ResponseEntity<Resource> downloadVideo(@PathVariable("id") Long id, @RequestParam("quality") String quality) {
+        return videoService.downloadVideo(id, quality);
     }
 
 }

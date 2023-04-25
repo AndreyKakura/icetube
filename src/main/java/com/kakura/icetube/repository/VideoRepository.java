@@ -20,8 +20,12 @@ import java.util.Optional;
 @CacheConfig(cacheNames = "video")
 public interface VideoRepository extends JpaRepository<Video, Long> {
 
-    @Cacheable(key = "#id")
+//    @Cacheable(key = "#id")
     Optional<Video> findById(Long id);
+
+    @Cacheable(key = "#id")
+    @Query("SELECT v FROM Video v WHERE v.id = :id")
+    Optional<Video> findByIdWithCache(@Param("id") Long id);
 
     Page<Video> findAll(Pageable pageable);
 

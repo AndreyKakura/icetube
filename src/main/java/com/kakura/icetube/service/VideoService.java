@@ -1,6 +1,7 @@
 package com.kakura.icetube.service;
 
 import com.kakura.icetube.dto.*;
+import com.kakura.icetube.exception.BadRequestException;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.CommentMapper;
 import com.kakura.icetube.mapper.VideoMapper;
@@ -14,12 +15,7 @@ import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.builder.FFmpegBuilder;
-import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.FFmpegFrameRecorder;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
@@ -35,8 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,12 +111,16 @@ public class VideoService {
         if (userService.isLoggedIn()) {
             userService.addToWatchedVideos(videoFromDb);
             videoDto.setIsSubscribedToAuthor(userService.isSubscribedToAuthor(videoFromDb.getUser()));
+            videoDto.setIsAuthor(isAuthor(videoFromDb));
         }
 
 
         return videoDto;
     }
 
+    private boolean isAuthor(Video video) {
+        return video.getUser().equals(userService.getCurrentUser());
+    }
 
     @Transactional
     public void saveNewVideo(NewVideoDto newVideoDto) {
@@ -408,7 +406,7 @@ public class VideoService {
     }
 
     public Optional<StreamBytesInfo> getStreamBytes(Long id, HttpRange range, String quality) {
-        Optional<Video> byId = videoRepository.findById(id);
+        Optional<Video> byId = videoRepository.findByIdWithCache(id);
         if (byId.isEmpty()) {
             return Optional.empty();
         }
@@ -442,6 +440,8 @@ public class VideoService {
             return Optional.empty();
         }
     }
+
+
 
 
     public EditVideoDto editVideo(EditVideoDto editVideoDto) {
@@ -630,5 +630,46 @@ public class VideoService {
                 .contentLength(file.length())
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
+    }
+
+    @Transactional
+    public void deleteVideo(Long id) {
+        User currentUser = userService.getCurrentUser();
+        Video videoById = videoRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Cannot find video by id " + id));
+
+        if (!videoById.getUser().getId().equals(currentUser.getId())) {
+            throw new BadRequestException("Cannot delete video posted by other user");
+        }
+
+        videoRepository.deleteById(id);
+
+        for (User user : videoById.getUsersWhoLiked()) {
+            user.getLikedVideos().remove(videoById);
+        }
+
+        for (User user : videoById.getUsersWhoDisliked()) {
+            user.getDislikedVideos().remove(videoById);
+        }
+
+        for (User user : videoById.getUsersWhoWatched()) {
+            user.getWatchedVideos().remove(videoById);
+        }
+
+        Path directory = Path.of(dataFolder, videoById.getId().toString());
+        File folder = directory.toFile();
+            deleteDirectory(folder);
+    }
+
+    private void deleteDirectory(File directory) {
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    deleteDirectory(file);
+                }
+            }
+        }
+        directory.delete();
     }
 }

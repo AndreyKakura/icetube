@@ -161,4 +161,10 @@ public class VideoController {
         return videoService.downloadVideo(id, quality);
     }
 
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @DeleteMapping("{id}")
+    public ResponseEntity<?> deleteVideo(@PathVariable("id") Long id) {
+        videoService.deleteVideo(id);
+        return ResponseEntity.ok().build();
+    }
 }

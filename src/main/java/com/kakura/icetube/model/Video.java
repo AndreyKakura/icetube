@@ -51,6 +51,9 @@ public class Video {
     @ManyToMany(mappedBy = "likedVideos")
     private Set<User> usersWhoLiked = new LinkedHashSet<>();
 
+    @ManyToMany(mappedBy = "dislikedVideos")
+    private Set<User> usersWhoDisliked = new LinkedHashSet<>();
+
     @Convert(converter = AtomicIntegerConverter.class)
     private AtomicInteger likes = new AtomicInteger(0);
 
@@ -63,7 +66,7 @@ public class Video {
     @Convert(converter = AtomicIntegerConverter.class)
     private AtomicInteger viewCount = new AtomicInteger(0);
 
-    @OneToMany(/*cascade = {CascadeType.REMOVE, CascadeType.MERGE},*/ mappedBy = "video", fetch = FetchType.LAZY)
+    @OneToMany(cascade = {CascadeType.REMOVE, CascadeType.MERGE}, mappedBy = "video", fetch = FetchType.LAZY)
     private List<Comment> comments = new ArrayList<>();
 
     public void incrementLikes() {

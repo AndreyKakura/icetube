@@ -51,6 +51,11 @@ public class User {
     private Set<Video> likedVideos = new LinkedHashSet<>();
 
     @ManyToMany
+    @JoinTable(
+            name = "users_disliked_videos",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "disliked_videos_id")
+    )
     private Set<Video> dislikedVideos = new LinkedHashSet<>();
 
     @ManyToMany

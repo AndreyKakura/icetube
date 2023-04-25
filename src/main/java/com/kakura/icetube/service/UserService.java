@@ -48,12 +48,16 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public User getCurrentUser() {
+    User getCurrentUser() {
 
         String username = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("Cannot find user by username " + username));
+    }
+
+    public UserDto getCurrentUserDto() {
+        return userMapper.toDto(getCurrentUser());
     }
 
     public boolean isLoggedIn() {
@@ -159,7 +163,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Cannot find user by id " + userId));
         UserDto userDto = userMapper.toDto(user);
-        if(isLoggedIn()) {
+        if (isLoggedIn()) {
             userDto.setIsSubscribed(isSubscribedToAuthor(user));
         }
         return userDto;

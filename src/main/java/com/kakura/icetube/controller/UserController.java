@@ -49,4 +49,9 @@ public class UserController {
         return userService.getById(userId);
     }
 
+    @GetMapping("/current")
+    public UserDto getCurrentUser() {
+        return userService.getCurrentUserDto();
+    }
+
 }

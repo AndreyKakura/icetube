@@ -442,8 +442,6 @@ public class VideoService {
     }
 
 
-
-
     public EditVideoDto editVideo(EditVideoDto editVideoDto) {
         Video videoFromDb = videoRepository.findById(editVideoDto.getId()).orElseThrow(() -> new NotFoundException("Cannot find video by id - " + editVideoDto.getId()));
 
@@ -658,7 +656,31 @@ public class VideoService {
 
         Path directory = Path.of(dataFolder, videoById.getId().toString());
         File folder = directory.toFile();
-            deleteDirectory(folder);
+        deleteDirectory(folder);
+    }
+
+    @Transactional
+    public void deleteVideoAsAdmin(Long id) {
+        Video videoById = videoRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Cannot find video by id " + id));
+
+        videoRepository.deleteById(id);
+
+        for (User user : videoById.getUsersWhoLiked()) {
+            user.getLikedVideos().remove(videoById);
+        }
+
+        for (User user : videoById.getUsersWhoDisliked()) {
+            user.getDislikedVideos().remove(videoById);
+        }
+
+        for (User user : videoById.getUsersWhoWatched()) {
+            user.getWatchedVideos().remove(videoById);
+        }
+
+        Path directory = Path.of(dataFolder, videoById.getId().toString());
+        File folder = directory.toFile();
+        deleteDirectory(folder);
     }
 
     private void deleteDirectory(File directory) {

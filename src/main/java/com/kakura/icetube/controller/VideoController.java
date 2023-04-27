@@ -156,15 +156,24 @@ public class VideoController {
         return videoService.getLikedVideos(pageNumber, pageSize);
     }
 
-    @GetMapping("download/{id}")
+    @GetMapping("/download/{id}")
     public ResponseEntity<Resource> downloadVideo(@PathVariable("id") Long id, @RequestParam("quality") String quality) {
         return videoService.downloadVideo(id, quality);
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @DeleteMapping("{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteVideo(@PathVariable("id") Long id) {
         videoService.deleteVideo(id);
+        return ResponseEntity.ok().build();
+    }
+
+
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @DeleteMapping("/admin-delete/{id}")
+    public ResponseEntity<?> deleteVideoAsAdmin(@PathVariable("id") Long id) {
+        videoService.deleteVideoAsAdmin(id);
         return ResponseEntity.ok().build();
     }
 }

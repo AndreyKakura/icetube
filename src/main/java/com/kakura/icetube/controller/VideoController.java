@@ -37,6 +37,8 @@ public class VideoController {
     public VideoPageDto findPage(@RequestParam(defaultValue = "0") Integer pageNumber,
                                  @RequestParam(defaultValue = "12") Integer pageSize) {
 
+        System.out.println("aaaaaaaa");
+
         if (pageNumber < 0 || pageSize < 1) {
             throw new BadRequestException("Bad request");
         }
@@ -169,11 +171,26 @@ public class VideoController {
     }
 
 
-
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/admin-delete/{id}")
     public ResponseEntity<?> deleteVideoAsAdmin(@PathVariable("id") Long id) {
         videoService.deleteVideoAsAdmin(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/findbytitle")
+    public VideoPageDto findPageByTitle(@RequestParam(defaultValue = "0") Integer pageNumber,
+                                        @RequestParam(defaultValue = "12") Integer pageSize,
+                                        @RequestParam String title) {
+        System.out.println("ffffff");
+        System.out.println(videoService.findPageByTitle(title, pageNumber, pageSize));
+        return videoService.findPageByTitle(title, pageNumber, pageSize);
+    }
+
+    @GetMapping("/findbytag")
+    public VideoPageDto findPageByTag(@RequestParam(defaultValue = "0") Integer pageNumber,
+                                      @RequestParam(defaultValue = "12") Integer pageSize,
+                                      @RequestParam String tag) {
+        return videoService.findPageByTag(tag, pageNumber, pageSize);
     }
 }

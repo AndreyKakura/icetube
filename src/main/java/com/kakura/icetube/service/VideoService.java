@@ -694,4 +694,24 @@ public class VideoService {
         }
         directory.delete();
     }
+
+    public VideoPageDto findPageByTitle(String title, Integer pageNumber, Integer pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Video> videos = videoRepository.findByTitleContaining(title, pageable);
+        if (videos.hasContent()) {
+            return new VideoPageDto(videos.stream().map(videoMapper::toDto).collect(Collectors.toList()), videos.getTotalPages());
+        } else {
+            return new VideoPageDto(null, videos.getTotalPages());
+        }
+    }
+
+    public VideoPageDto findPageByTag(String tag, Integer pageNumber, Integer pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Video> videos = videoRepository.findByTags(convertStringsToTags(Set.of(tag)).iterator().next(), pageable);
+        if (videos.hasContent()) {
+            return new VideoPageDto(videos.stream().map(videoMapper::toDto).collect(Collectors.toList()), videos.getTotalPages());
+        } else {
+            return new VideoPageDto(null, videos.getTotalPages());
+        }
+    }
 }

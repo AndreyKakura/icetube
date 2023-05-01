@@ -1,5 +1,6 @@
 package com.kakura.icetube.repository;
 
+import com.kakura.icetube.model.Tag;
 import com.kakura.icetube.model.User;
 import com.kakura.icetube.model.Video;
 import org.springframework.cache.annotation.CacheConfig;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 @CacheConfig(cacheNames = "video")
@@ -35,6 +37,10 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
     Page<Video> findByUsersWhoWatchedIn(List<User> users, Pageable pageable);
 
     Page<Video> findByUsersWhoLikedIn(List<User> users, Pageable pageable);
+
+    Page<Video> findByTitleContaining(String title, Pageable pageable);
+
+    Page<Video> findByTags(Tag tag, Pageable pageable);
 
     @CacheEvict(key = "#video.id")
     Video save(Video video);

@@ -1,5 +1,6 @@
 package com.kakura.icetube.service;
 
+import com.kakura.icetube.dto.ChangePasswordDto;
 import com.kakura.icetube.dto.RegistrationDto;
 import com.kakura.icetube.dto.UserDto;
 import com.kakura.icetube.dto.VideoDto;
@@ -16,6 +17,8 @@ import com.kakura.icetube.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final SubscriptionRepository subscriptionRepository;
     private final VideoMapper videoMapper;
+    private final AuthenticationManager authenticationManager;
 
     public UserDto saveUser(RegistrationDto registrationDto) {
         User user = userMapper.toModel(registrationDto);
@@ -169,4 +173,20 @@ public class UserService {
         return userDto;
     }
 
+    public void changePassword(ChangePasswordDto changePasswordDto) {
+        User currentUser = getCurrentUser();
+
+        try {
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(currentUser.getUsername(),
+                            changePasswordDto.getOldPassword());
+
+            authenticationManager.authenticate(authenticationToken);
+
+            currentUser.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
+            userRepository.save(currentUser);
+        } catch (Exception e) {
+            throw new BadRequestException("Old password is not correct");
+        }
+    }
 }

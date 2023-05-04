@@ -47,10 +47,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 @Log4j2
 public class VideoService {
 
-//    public void uploadVideo(MultipartFile file) {
-//        //TODO upload file
-//    }
-
     @Value("${data.folder}")
     private String dataFolder;
 
@@ -130,24 +126,14 @@ public class VideoService {
         }
         video.setUser(userService.getCurrentUser());
 
-        // Get the resolution of the video
-//        String videoResolution = null;
-//        try {
-//            videoResolution = getVideoResolution(newVideoDto.getVideoFile());
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-
         Video savedVideo = videoRepository.save(video);
 
-        // Create a directory for the video based on the resolution
         Path directory = Path.of(dataFolder, video.getId().toString());
         try {
             Files.createDirectories(directory);
             Path videoDirectory = Path.of(directory.toString());
             Files.createDirectories(videoDirectory);
 
-            // Save the original video
             Path videoPath = Path.of(videoDirectory.toString(), newVideoDto.getVideoFile().getOriginalFilename());
             try (OutputStream out = Files.newOutputStream(videoPath, CREATE, WRITE)) {
                 newVideoDto.getVideoFile().getInputStream().transferTo(out);
@@ -158,11 +144,9 @@ public class VideoService {
                 newVideoDto.getPreviewFile().getInputStream().transferTo(out);
             }
 
-            // Get the video duration
             long length = frameGrabberService.lengthInTime(videoPath);
             video.setVideoLength(length);
 
-            // Create videos with lower resolutions
             int videoWidth = 0;
             int videoHeight = 0;
             try (FFmpegFrameGrabber frameGrabber = new FFmpegFrameGrabber(videoPath.toString())) {
@@ -177,7 +161,6 @@ public class VideoService {
 
             video.setVideoResolution(videoHeight);
 
-
             if (videoWidth >= 1920 && videoHeight >= 1080) {
                 String maxResolution = "1080p";
                 Path maxResolutionVideoDirectory = Path.of(directory.toString(), maxResolution);
@@ -185,7 +168,6 @@ public class VideoService {
                 Path maxResolutionVideoPath = Path.of(maxResolutionVideoDirectory.toString(), newVideoDto.getVideoFile().getOriginalFilename());
                 createLowerResolutionVideo(videoPath, maxResolutionVideoPath, 1920, 1080, 3_000_000);
             }
-
 
             if (videoWidth >= 1280 && videoHeight >= 720) {
                 String lowerResolution = "720p";
@@ -218,7 +200,6 @@ public class VideoService {
         }
     }
 
-
     private void createLowerResolutionVideo(Path sourceVideoPath, Path outputVideoPath, int targetWidth, int targetHeight, long bitrate) throws IOException {
         FFmpeg ffmpeg = new FFmpeg(ffmpegPass);
         FFprobe ffprobe = new FFprobe(ffprobePass);
@@ -250,93 +231,10 @@ public class VideoService {
 
 // Run a one-pass encode
         executor.createJob(builder).run();
-
 // Or run a two-pass encode (which is better quality at the cost of being slower)
 //        executor.createTwoPassJob(builder).run();
     }
 
-
-//    private void createLowerResolutionVideo(Path sourceVideoPath, Path outputVideoPath, int targetWidth, int targetHeight) throws IOException {
-//        try (FFmpegFrameGrabber frameGrabber = new FFmpegFrameGrabber(sourceVideoPath.toString())) {
-//            frameGrabber.start();
-//
-//            FFmpegFrameRecorder recorder = new FFmpegFrameRecorder(outputVideoPath.toString(), targetWidth, targetHeight);
-//            recorder.setVideoCodec(avcodec.AV_CODEC_ID_VP9);
-//            recorder.setFormat("mp4");
-//            recorder.setPixelFormat(avutil.AV_PIX_FMT_YUV420P);
-//            recorder.setFrameRate(frameGrabber.getFrameRate());
-////            recorder.setVideoBitrate(1000000);
-//            recorder.setVideoBitrate(100000);
-//            recorder.start();
-//
-//            Frame frame;
-//            while ((frame = frameGrabber.grabFrame()) != null) {
-//                Java2DFrameConverter converter = new Java2DFrameConverter();
-//                BufferedImage image = converter.convert(frame);
-//
-//                // Scale the image to the target size
-//                BufferedImage scaledImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_3BYTE_BGR);
-//                Graphics2D g = scaledImage.createGraphics();
-//                g.drawImage(image, 0, 0, targetWidth, targetHeight, null);
-//                g.dispose();
-//
-//                Frame scaledFrame = converter.convert(scaledImage);
-//                recorder.record(scaledFrame);
-//            }
-//
-//            recorder.stop();
-//            frameGrabber.stop();
-//        } catch (Exception e) {
-//            log.error("Failed to create lower resolution video", e);
-//            throw new IllegalStateException();
-//        }
-//    }
-
-
-    //    @Transactional
-//    public VideoDto saveNewVideo(NewVideoDto newVideoDto) {
-//        Video video = videoMapper.toModel(newVideoDto);
-//        if (newVideoDto.getTags() != null) {
-//            video.setTags(convertStringsToTags(newVideoDto.getTags()));
-//        }
-//        video.setUser(userService.getCurrentUser());
-//
-//        Video savedVideo = videoRepository.save(video);
-//
-//        // Get the resolution of the video
-//        String videoResolution = null;
-//        try {
-//            videoResolution = getVideoResolution(newVideoDto.getVideoFile());
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//        // Create a directory for the video based on the resolution
-//        Path directory = Path.of(dataFolder, video.getId().toString());
-//        System.out.println(directory.toString());
-//        try {
-//            Files.createDirectories(directory);
-//            Path videoDirectory = Path.of(directory.toString(), videoResolution);
-//            Files.createDirectories(videoDirectory);
-//            Path videoPath = Path.of(directory.toString(), videoResolution, newVideoDto.getVideoFile().getOriginalFilename());
-//            try (OutputStream out = Files.newOutputStream(videoPath, CREATE, WRITE)) {
-//                newVideoDto.getVideoFile().getInputStream().transferTo(out);
-//            }
-//
-//            Path previewPath = Path.of(directory.toString(), newVideoDto.getPreviewFile().getOriginalFilename());
-//            try (OutputStream out = Files.newOutputStream(previewPath, CREATE, WRITE)) {
-//                newVideoDto.getPreviewFile().getInputStream().transferTo(out);
-//            }
-//
-//            long length = frameGrabberService.lengthInTime(videoPath);
-//            video.setVideoLength(length);
-//            return videoMapper.toDto(videoRepository.save(video));
-//        } catch (IOException e) {
-//            log.error("", e);
-//            throw new IllegalStateException();
-//        }
-//    }
-//
     private String getVideoResolution(MultipartFile videoFile) throws IOException {
         try (FFmpegFrameGrabber frameGrabber = new FFmpegFrameGrabber(videoFile.getInputStream())) {
             frameGrabber.start();
@@ -359,39 +257,6 @@ public class VideoService {
         }
     }
 
-
-//    @Transactional
-//    public VideoDto saveNewVideo(NewVideoDto newVideoDto) {
-//        Video video = videoMapper.toModel(newVideoDto);
-//        if (newVideoDto.getTags() != null) {
-//            video.setTags(convertStringsToTags(newVideoDto.getTags()));
-//        }
-//        video.setUser(userService.getCurrentUser());
-//
-//        Video savedVideo = videoRepository.save(video);
-//
-//        Path directory = Path.of(dataFolder, video.getId().toString());
-//        try {
-//            Files.createDirectory(directory);
-//            Path videoPath = Path.of(directory.toString(), newVideoDto.getVideoFile().getOriginalFilename());
-//            try (OutputStream out = Files.newOutputStream(videoPath, CREATE, WRITE)) {
-//                newVideoDto.getVideoFile().getInputStream().transferTo(out);
-//            }
-//
-//            Path previewPath = Path.of(directory.toString(), newVideoDto.getPreviewFile().getOriginalFilename());
-//            try (OutputStream out = Files.newOutputStream(previewPath, CREATE, WRITE)) {
-//                newVideoDto.getPreviewFile().getInputStream().transferTo(out);
-//            }
-////            frameGrabberService.generatePreviewPictures(file); //TODO if preview from front is null then generate preview
-//            long length = frameGrabberService.lengthInTime(videoPath);
-//            video.setVideoLength(length);
-//            return videoMapper.toDto(videoRepository.save(video));
-//        } catch (IOException e) {
-//            log.error("", e);
-//            throw new IllegalStateException();
-//        }
-////        return new UploadVideoResponse(savedVideo.getId(), "http://localhost:8080/api/v1/video/stream/" + savedVideo.getId());
-//    }
 
     public byte[] getPreviewBytes(Long id) {
         Video videoFromDb = videoRepository.findById(id).orElseThrow(() -> new NotFoundException("Cannot find preview by id" + id));
@@ -578,7 +443,6 @@ public class VideoService {
         } else {
             return new VideoPageDto(null, videos.getTotalPages());
         }
-//        return videoRepository.findAllByUserId(userId).stream().map(videoMapper::toDto).toList();
     }
 
     public VideoPageDto getSubscribedVideosPage(int pageNumber, int pageSize) {

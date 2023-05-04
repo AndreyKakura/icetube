@@ -102,16 +102,13 @@ public class VideoController {
     @PostMapping(path = "/upload")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?> uploadVideo(@ModelAttribute @Valid NewVideoDto newVideoDto) {
-//        VideoDto videoDtoResponse = null;
         try {
-//            videoDtoResponse = videoService.saveNewVideo(newVideoDto);
             videoService.saveNewVideo(newVideoDto);
         } catch (Exception ex) {
             log.error(ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
         return ResponseEntity.status(HttpStatus.CREATED).build();
-
     }
 
     @PostMapping("/preview")

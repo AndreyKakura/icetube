@@ -1,5 +1,6 @@
 package com.kakura.icetube.controller;
 
+import com.kakura.icetube.dto.ChangeNameAndSurnameDto;
 import com.kakura.icetube.dto.ChangePasswordDto;
 import com.kakura.icetube.dto.UserDto;
 import com.kakura.icetube.dto.VideoDto;
@@ -95,5 +96,17 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, emptyRefreshCookie.toString())
                 .build();
+    }
+
+    @PostMapping("/change-name-and-surname")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public UserDto changeNameAndSurname(@RequestBody @Valid ChangeNameAndSurnameDto changeNameAndSurnameDto,
+                                        BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(bindingResult.getFieldErrors().stream()
+                    .map(DefaultMessageSourceResolvable::getDefaultMessage).collect(Collectors.joining("; ")));
+        }
+
+        return userService.changeNameAndSurname(changeNameAndSurnameDto);
     }
 }

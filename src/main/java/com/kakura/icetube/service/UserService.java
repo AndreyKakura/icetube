@@ -1,9 +1,6 @@
 package com.kakura.icetube.service;
 
-import com.kakura.icetube.dto.ChangePasswordDto;
-import com.kakura.icetube.dto.RegistrationDto;
-import com.kakura.icetube.dto.UserDto;
-import com.kakura.icetube.dto.VideoDto;
+import com.kakura.icetube.dto.*;
 import com.kakura.icetube.exception.BadRequestException;
 import com.kakura.icetube.exception.NotFoundException;
 import com.kakura.icetube.mapper.UserMapper;
@@ -173,6 +170,7 @@ public class UserService {
         return userDto;
     }
 
+    @Transactional
     public void changePassword(ChangePasswordDto changePasswordDto) {
         User currentUser = getCurrentUser();
 
@@ -187,6 +185,26 @@ public class UserService {
             userRepository.save(currentUser);
         } catch (Exception e) {
             throw new BadRequestException("Old password is not correct");
+        }
+    }
+
+    @Transactional
+    public UserDto changeNameAndSurname(ChangeNameAndSurnameDto changeNameAndSurnameDto) {
+        User currentUser = getCurrentUser();
+        try {
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(currentUser.getUsername(),
+                            changeNameAndSurnameDto.getPassword());
+            authenticationManager.authenticate(authenticationToken);
+
+            currentUser.setName(changeNameAndSurnameDto.getName());
+            currentUser.setSurname(changeNameAndSurnameDto.getSurname());
+
+            User user = userRepository.save(currentUser);
+
+            return userMapper.toDto(user);
+        } catch (Exception e) {
+            throw new BadRequestException("Password is not correct");
         }
     }
 }

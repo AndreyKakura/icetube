@@ -32,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -485,7 +487,8 @@ public class VideoService {
         }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + videoById.getVideoFileName());
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + URLEncoder
+                .encode(videoById.getVideoFileName(), StandardCharsets.UTF_8));
 
         return ResponseEntity.ok()
                 .headers(headers)

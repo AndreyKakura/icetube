@@ -42,7 +42,7 @@ public class Video {
     private int videoResolution;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", nullable = true) //todo change to nullable = false
+    @JoinColumn(name = "user_id", nullable = false) //todo change to nullable = false
     private User user;
 
     @ManyToMany(mappedBy = "watchedVideos")
